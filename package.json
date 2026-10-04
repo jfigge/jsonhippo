@@ -17,7 +17,7 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "lint": "eslint src/js test scripts",
-    "validate": "html-validate src/index.html site/hippoherd/jsonhippo.html"
+    "validate": "html-validate src/index.html site/product-page/jsonhippo.html"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

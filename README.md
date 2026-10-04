@@ -46,14 +46,31 @@ build step: the browser loads `src/` as it is.
 | `make serve` | Serves `src/` on `http://localhost:8080` with caching off, so a reload always runs the current code (`PORT=…` to change) |
 | `make test` | Unit tests: `node --test`, no framework |
 | `make lint` | ESLint over `src/js`, `test` and `scripts` |
-| `make validate` | html-validate over the app page and the hippoherd page |
+| `make validate` | html-validate over the app page and the parked product page |
 | `make check` | `lint` + `validate` + `test` |
 | `make dist` | Copies `src/` to `dist/`, ready to publish (no bundling) |
 | `make clean` | Removes `dist/` and `build/` |
 | `make fixtures` | Writes the large generated test documents to `test/fixtures/large/` |
 | `make screenshots` | Re-captures the product-page screenshots from the real app (needs Chrome) |
-| `make site` | Syncs the product page into a hippoherd checkout's `website/jsonhippo/` (`HIPPOHERD=…`, default `../hippoherd`) |
-| `make preview-site` | Serves the product page inside a hippoherd checkout, before syncing |
+| `make site` | Publishes: runs `check`, then copies the app into a hippoherd checkout's `website/jsonhippo/` (`HIPPOHERD=…`, default `../hippoherd`) |
+| `make preview-site` | Serves a copy of the hippoherd site with this build of the app in it, before publishing |
+
+## Where it runs
+
+Live at **[hippoherd.com/jsonhippo](https://hippoherd.com/jsonhippo/)**. The
+herd's index carries JsonHippo's card; **Launch** opens the app itself.
+
+To publish a new version:
+
+```sh
+make site                       # check, then copy dist/ into ../hippoherd/website/jsonhippo/
+cd ../hippoherd
+git add -A website/jsonhippo && git commit -m "JsonHippo: …" && git push
+```
+
+hippoherd's CI deploys on every push to `main`. Its `content/hippos.mjs` marks
+JsonHippo `externalSite: true` (its generator never writes that directory) and
+`webApp: true` (the card launches the app rather than describing it).
 
 ## How it is built
 
@@ -106,8 +123,8 @@ scripts/
   browser.js              minimal headless-Chrome driver (Node built-ins only)
   screenshots.js          `make screenshots`
   serve.py                `make serve`: http.server with caching turned off
-site/hippoherd/           the hippoherd.com product page; `make site` publishes it
-                          (see its README)
+site/product-page/        a marketing page, parked for a future jsonhippo.com
+                          (not published; see its README)
 docs/
   USAGE.md                user guide and error reference
   features/               the feature specs this was built from

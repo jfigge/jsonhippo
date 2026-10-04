@@ -10,25 +10,21 @@ WORKSPACE := $(realpath $(dir $(realpath $(firstword $(MAKEFILE_LIST)))))
 SRC_DIR   := $(WORKSPACE)/src
 DIST_DIR  := $(WORKSPACE)/dist
 BUILD_DIR := $(WORKSPACE)/build
-SITE_DIR  := $(WORKSPACE)/site/hippoherd
+PAGE_DIR  := $(WORKSPACE)/site/product-page
 
 PORT      ?= 8080
 SITE_PORT ?= 8791
 
-# A checkout of jfigge/hippoherd. `make site` writes the product page into
-# it; `make preview-site` borrows its site.css to show the page in context.
+# A checkout of jfigge/hippoherd. The app is published at
+# hippoherd.com/jsonhippo/: `make site` copies dist/ into its website/jsonhippo/.
 HIPPOHERD ?= $(WORKSPACE)/../hippoherd
 
-# The product page as hippoherd serves it: website/jsonhippo/index.html plus
-# its img/. Assembled here so both targets ship exactly the same files.
-SITE_STAGE := $(BUILD_DIR)/site-jsonhippo
-
 NODE_BIN  := $(WORKSPACE)/node_modules/.bin
-HTML      := src/index.html site/hippoherd/jsonhippo.html
+HTML      := src/index.html site/product-page/jsonhippo.html
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install serve test lint validate check dist clean fixtures screenshots site stage-site preview-site
+.PHONY: help install serve test lint validate check dist clean fixtures screenshots site preview-site
 
 help:
 	@echo ""
@@ -40,7 +36,7 @@ help:
 	@echo "    serve         Serve src/ at http://localhost:$(PORT)  (PORT=…)"
 	@echo "    test          Unit tests (node --test, no framework)"
 	@echo "    lint          ESLint over src/js, test and scripts"
-	@echo "    validate      html-validate over the app page and the hippoherd page"
+	@echo "    validate      html-validate over the app page and the parked product page"
 	@echo "    check         lint + validate + test"
 	@echo "    dist          Copy src/ to dist/, ready to publish (no bundling)"
 	@echo "    clean         Remove dist/ and build/"
@@ -48,10 +44,10 @@ help:
 	@echo "  Extras:"
 	@echo "    fixtures      Write the large generated fixtures to test/fixtures/large/"
 	@echo "    screenshots   Capture the product-page screenshots (needs Chrome)"
-	@echo "    site          Sync the product page into a hippoherd checkout's"
-	@echo "                  website/jsonhippo/  (HIPPOHERD=…, default ../hippoherd)"
-	@echo "    preview-site  Serve the product page inside a hippoherd checkout"
-	@echo "                  at http://localhost:$(SITE_PORT)/jsonhippo/  (HIPPOHERD=…)"
+	@echo "    site          Publish: check, then copy the app into a hippoherd"
+	@echo "                  checkout's website/jsonhippo/  (HIPPOHERD=…, default ../hippoherd)"
+	@echo "    preview-site  Serve a hippoherd checkout with this app in it, at"
+	@echo "                  http://localhost:$(SITE_PORT)/  — before running make site"
 	@echo ""
 
 # npm ci only re-runs when the lockfile changes; the touch stops make from
@@ -92,32 +88,25 @@ fixtures:
 screenshots:
 	node scripts/screenshots.js
 
-# The page ships as index.html beside its screenshots. The README and the
-# html-validate override in site/hippoherd/ are this repo's business only.
-stage-site:
-	rm -rf "$(SITE_STAGE)"
-	mkdir -p "$(SITE_STAGE)"
-	cp "$(SITE_DIR)/jsonhippo.html" "$(SITE_STAGE)/index.html"
-	cp -R "$(SITE_DIR)/img" "$(SITE_STAGE)/img"
-
-# Like `make site` in jfigge/rollhippo, mazehippo and scanhippo: hippoherd
-# marks JsonHippo `externalSite: true`, so its generator never writes this
-# page and the copy here is the only source. --delete keeps the target an
-# exact mirror (a screenshot removed here disappears there too). The mark is
-# NOT copied: hippoherd draws it with scripts/make-marks.mjs, from an entry
-# that reproduces src/img/jsonhippo.svg.
-site: validate stage-site
+# Publish the app to hippoherd.com/jsonhippo/. hippoherd marks JsonHippo
+# `externalSite: true` and `webApp: true` (content/hippos.mjs), so its
+# generator never writes that directory and its index card opens the app. The
+# copy made here is the only source: --delete keeps it an exact mirror of
+# dist/, and `check` runs first so a red build never reaches the site.
+# Commit and push in hippoherd afterwards; its CI deploys on push.
+site: check dist
 	@test -d "$(HIPPOHERD)/website" || { echo "No hippoherd checkout at $(HIPPOHERD) — set HIPPOHERD=…"; exit 1; }
 	mkdir -p "$(HIPPOHERD)/website/jsonhippo"
-	rsync -a --delete "$(SITE_STAGE)/" "$(HIPPOHERD)/website/jsonhippo/"
-	@echo "Synced to $(HIPPOHERD)/website/jsonhippo/ — review and commit it in hippoherd."
+	rsync -a --delete --exclude .DS_Store "$(DIST_DIR)/" "$(HIPPOHERD)/website/jsonhippo/"
+	@echo "Published to $(HIPPOHERD)/website/jsonhippo/ — review, commit and push it in hippoherd."
 
-preview-site: stage-site
+# The whole hippoherd site with this build of the app in it — the index card
+# and the click-through — without touching the hippoherd checkout.
+preview-site: dist
 	@test -d "$(HIPPOHERD)/website" || { echo "No hippoherd checkout at $(HIPPOHERD) — set HIPPOHERD=…"; exit 1; }
 	rm -rf "$(BUILD_DIR)/site"
 	mkdir -p "$(BUILD_DIR)/site"
 	cp -R "$(HIPPOHERD)/website/." "$(BUILD_DIR)/site/"
-	rsync -a --delete "$(SITE_STAGE)/" "$(BUILD_DIR)/site/jsonhippo/"
-	cp "$(SRC_DIR)/img/jsonhippo.svg" "$(BUILD_DIR)/site/marks/jsonhippo.svg"
-	@echo "Product page at http://localhost:$(SITE_PORT)/jsonhippo/"
+	rsync -a --delete --exclude .DS_Store "$(DIST_DIR)/" "$(BUILD_DIR)/site/jsonhippo/"
+	@echo "hippoherd with this JsonHippo at http://localhost:$(SITE_PORT)/  (app at /jsonhippo/)"
 	python3 scripts/serve.py $(SITE_PORT) "$(BUILD_DIR)/site"

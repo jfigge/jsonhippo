@@ -18,9 +18,9 @@
  * screenshots.js — `make screenshots`: capture the product-page images from
  * the real app, driven in headless Chrome, so they never drift from it.
  *
- *   site/hippoherd/img/error-pinpoint.png   a missing comma 124,000 lines into 5 MB
- *   site/hippoherd/img/smart-paste.png      JSON escaped twice, pasted and formatted
- *   site/hippoherd/img/tree-filter.png      the tree, filtered to every "zip"
+ *   site/product-page/img/error-pinpoint.png   a missing comma 124,000 lines into 5 MB
+ *   site/product-page/img/smart-paste.png      JSON escaped twice, pasted and formatted
+ *   site/product-page/img/tree-filter.png      the tree, filtered to every "zip"
  *   src/img/jsonhippo-512.png               the mark as a PNG, transparent corners
  *
  * The mark's corners are checked after capture: a rounded-square icon on a
@@ -36,7 +36,7 @@ import { launch, serve } from "./browser.js";
 import { makeLargeObject, makeMissingComma } from "../test/fixtures/generate.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = join(ROOT, "site/hippoherd/img");
+const OUT = join(ROOT, "site/product-page/img");
 const WIDTH = 1180;
 const HEIGHT = 660;
 
@@ -116,7 +116,7 @@ async function captureApp(server) {
   const shot = async (name) => {
     await sleep(150);
     writeFileSync(join(OUT, name), await b.screenshot());
-    console.log(`  site/hippoherd/img/${name}`);
+    console.log(`  site/product-page/img/${name}`);
   };
   try {
     await b.setTheme(true);
