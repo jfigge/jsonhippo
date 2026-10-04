@@ -34,13 +34,6 @@
   --match: #fff1a8;
   --match-current: #ffd24d;
   --match-row: #fff8d6;
-
-  --t-key: #1f1f24;
-  --t-string: #1a7f37;
-  --t-number: #0a56c2;
-  --t-boolean: #8a2fc4;
-  --t-null: #6e6e73;
-
   --error: #c4271d;
   --error-bg: #fdecea;
   --warn: #8a5a00;
@@ -74,11 +67,6 @@
     --match: #5c4a12;
     --match-current: #8a6a10;
     --match-row: #2e2814;
-    --t-key: #e8e8e8;
-    --t-string: #7fc98a;
-    --t-number: #6cb6ff;
-    --t-boolean: #d7a1ff;
-    --t-null: #9a9a9a;
     --error: #ff7b72;
     --error-bg: #3a1d1b;
     --warn: #e3b341;
@@ -103,11 +91,6 @@
   --match: #5c4a12;
   --match-current: #8a6a10;
   --match-row: #2e2814;
-  --t-key: #e8e8e8;
-  --t-string: #7fc98a;
-  --t-number: #6cb6ff;
-  --t-boolean: #d7a1ff;
-  --t-null: #9a9a9a;
   --error: #ff7b72;
   --error-bg: #3a1d1b;
   --warn: #e3b341;
@@ -260,8 +243,8 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
+  gap: 4px;
+  padding: 6px 10px;
   border-bottom: 1px solid var(--surface-0);
 }
 
@@ -275,7 +258,7 @@ textarea {
 .jh-toolbar-end {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   margin-left: auto;
 }
 
@@ -326,6 +309,27 @@ textarea {
   color: var(--ok);
 }
 
+/* In the toolbars and the detail bar, buttons drop their boxes: a row of
+   outlined buttons is most of what made the tabs look busy. */
+.jh-toolbar .jh-btn:not(.jh-btn--primary),
+.jh-detail .jh-btn {
+  padding: 4px 8px;
+  border-color: transparent;
+  background: none;
+  color: var(--subtext);
+}
+
+.jh-toolbar .jh-btn:not(.jh-btn--primary):hover,
+.jh-detail .jh-btn:hover {
+  background: var(--surface-0);
+  color: var(--text);
+}
+
+.jh-toolbar .jh-btn--done:not(.jh-btn--primary),
+.jh-detail .jh-btn--done {
+  color: var(--ok);
+}
+
 .jh-field,
 .jh-check {
   display: inline-flex;
@@ -336,8 +340,7 @@ textarea {
   white-space: nowrap;
 }
 
-.jh-select,
-.jh-number {
+.jh-select {
   padding: 3px 6px;
   border: 1px solid var(--surface-1);
   border-radius: 6px;
@@ -345,8 +348,16 @@ textarea {
   font-size: 13px;
 }
 
-.jh-number {
-  width: 4.5em;
+.jh-select--quiet {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--subtext);
+  cursor: pointer;
+}
+
+.jh-select--quiet:hover {
+  background-color: var(--surface-0);
+  color: var(--text);
 }
 
 .jh-check input {
@@ -502,25 +513,17 @@ textarea {
   z-index: 2;
 }
 
-/* ── Tree: filter bar ───────────────────────────────────────────────────── */
-
-.jh-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--surface-0);
-}
+/* ── Tree toolbar: filter + expand controls, one quiet row ──────────────── */
 
 .jh-filter {
-  flex: 1 1 280px;
-  min-width: 180px;
-  padding: 5px 10px;
+  flex: 1 1 220px;
+  min-width: 160px;
+  padding: 4px 10px;
   border: 1px solid var(--surface-1);
   border-radius: 6px;
   background: var(--bg);
-  font: 13px var(--mono);
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .jh-filter--invalid {
@@ -528,56 +531,17 @@ textarea {
   outline-color: var(--error);
 }
 
-.jh-seg {
-  display: inline-flex;
-  border: 1px solid var(--surface-1);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.jh-seg label {
-  position: relative;
-}
-
-.jh-seg input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.jh-seg span {
-  display: block;
-  padding: 4px 10px;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--subtext);
-  cursor: pointer;
-}
-
-.jh-seg label + label span {
-  border-left: 1px solid var(--surface-1);
-}
-
-.jh-seg input:checked + span {
-  background: var(--selection);
-  color: var(--text);
-  font-weight: 600;
-}
-
-.jh-seg input:focus-visible + span {
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
-}
-
+/* Borderless controls: they show themselves on hover and when they are on,
+   and otherwise stay out of the way of the data. */
 .jh-toggle-btn,
 .jh-icon-btn {
-  min-width: 30px;
+  min-width: 28px;
   padding: 4px 6px;
-  border: 1px solid var(--surface-1);
+  border: 1px solid transparent;
   border-radius: 6px;
-  background: var(--bg);
-  font: 600 13px/20px var(--mono);
+  background: none;
   color: var(--subtext);
+  font: 600 13px/20px var(--mono);
   cursor: pointer;
 }
 
@@ -587,8 +551,14 @@ textarea {
   justify-content: center;
 }
 
+.jh-toggle-btn:hover,
+.jh-icon-btn:hover:not(:disabled) {
+  background: var(--surface-0);
+  color: var(--text);
+}
+
 .jh-icon-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -599,11 +569,13 @@ textarea {
 }
 
 .jh-filter-count {
-  min-width: 7em;
   color: var(--subtext);
   font-size: 13px;
-  text-align: right;
   white-space: nowrap;
+}
+
+.jh-filter-count:empty {
+  display: none;
 }
 
 .jh-filter-error {
@@ -618,16 +590,21 @@ textarea {
 
 .jh-confirm {
   display: inline-flex;
+  flex-basis: 100%;
   align-items: center;
   gap: 8px;
-  margin-left: 8px;
-  padding: 2px 4px 2px 10px;
+  padding: 3px 4px 3px 10px;
   border-radius: 6px;
   background: var(--selection);
   font-size: 13px;
 }
 
 /* ── Tree ───────────────────────────────────────────────────────────────── */
+
+/* Modelled on jsonviewer.stack.hu's tree, which reads as data first: plain
+   text in the UI font, keys and values in the same colour, a mark only where
+   it carries information (object or array), and nothing on a row that the
+   rows below it already show. */
 
 .jh-tree-wrap {
   flex: 1;
@@ -644,14 +621,14 @@ textarea {
 }
 
 .jh-children {
-  margin-left: 9px;
-  padding-left: 9px;
-  border-left: 1px solid var(--surface-0);
+  margin-left: 7px;
+  padding-left: 11px;
+  border-left: 1px dotted var(--surface-2);
 }
 
 .jh-tree {
-  padding: 0 10px;
-  font: var(--code-size) / 22px var(--mono);
+  padding: 0 8px;
+  font: 13px / 20px var(--sans);
 }
 
 .jh-node {
@@ -661,10 +638,9 @@ textarea {
 .jh-row {
   display: flex;
   align-items: center;
-  gap: 5px;
-  min-height: 22px;
-  padding: 0 6px 0 2px;
-  border-radius: 4px;
+  min-height: 20px;
+  padding: 0 6px 0 0;
+  border-radius: 3px;
   white-space: nowrap;
   cursor: default;
 }
@@ -684,11 +660,21 @@ textarea {
 
 .jh-toggle {
   display: inline-flex;
-  width: 16px;
-  height: 16px;
+  flex: none;
+  width: 14px;
+  height: 14px;
   color: var(--muted);
   cursor: pointer;
   transition: transform 0.1s;
+}
+
+.jh-toggle .jh-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.jh-toggle:hover {
+  color: var(--text);
 }
 
 .jh-toggle--none {
@@ -703,51 +689,62 @@ textarea {
   display: none;
 }
 
+/* { } and [ ]: the only per-row mark with something to say. */
 .jh-type {
-  color: var(--muted);
+  width: 15px;
+  height: 15px;
+  margin: 0 5px 0 2px;
+  color: var(--accent);
 }
 
-.jh-type--string { color: var(--t-string); }
-.jh-type--number { color: var(--t-number); }
-.jh-type--boolean { color: var(--t-boolean); }
-.jh-type--null { color: var(--t-null); }
+/* Scalars: one small, neutral dot in the same column, so every key starts at
+   the same x and the eye has an anchor — the type is in the value itself. */
+.jh-dot {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 0 5px 0 2px;
+  background: radial-gradient(circle, var(--surface-2) 0 2.5px, transparent 3px);
+}
 
 .jh-key {
-  color: var(--t-key);
-  font-weight: 600;
+  color: var(--text);
 }
 
-.jh-key--index {
-  color: var(--muted);
-  font-weight: 400;
+.jh-key--index,
+.jh-key--root {
+  color: var(--subtext);
 }
 
 .jh-colon {
+  margin-right: 5px;
   color: var(--muted);
-  margin-left: -4px;
 }
 
 .jh-value {
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text);
 }
 
-.jh-value--string { color: var(--t-string); }
-.jh-value--number { color: var(--t-number); }
-.jh-value--boolean { color: var(--t-boolean); }
-.jh-value--null { color: var(--t-null); font-style: italic; }
+.jh-value--null {
+  color: var(--subtext);
+}
 
 .jh-count {
+  margin-left: 8px;
   color: var(--muted);
+  font-size: 12px;
 }
 
 .jh-truncated {
+  margin-left: 4px;
   color: var(--muted);
-  font-style: italic;
+  font-size: 12px;
 }
 
 .jh-node--match > .jh-row {
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 3px 3px 0;
   box-shadow: inset 2px 0 0 var(--brand);
 }
 
@@ -759,29 +756,22 @@ textarea {
 
 .jh-node--match-current > .jh-row {
   background: var(--match-row);
-  box-shadow: inset 4px 0 0 var(--brand);
+  box-shadow: inset 3px 0 0 var(--brand);
 }
 
 .jh-node--match-current > .jh-row .jh-hl {
   background: var(--match-current);
-  outline: 1px solid var(--text);
 }
 
 .jh-more {
-  padding: 2px 0 2px 24px;
+  padding: 2px 0 2px 36px;
 }
 
 .jh-more .jh-btn {
   padding: 1px 8px;
   margin-right: 6px;
-  font: 12px/18px var(--sans);
-}
-
-/* Siblings a filter has hidden, summarised in one muted line. */
-.jh-hidden-note {
-  padding-left: 24px;
-  color: var(--muted);
-  font: italic 12px/20px var(--sans);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .jh-tree-message {
@@ -824,6 +814,12 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
   font: var(--code-size) var(--mono);
+}
+
+.jh-detail-kind {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .jh-detail-actions {

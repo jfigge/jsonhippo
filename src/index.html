@@ -68,8 +68,10 @@
 </header>
 
 <div class="jh-tabs" role="tablist" aria-label="View">
-  <button type="button" class="jh-tab jh-tab--active" id="jh-tab-text" role="tab" aria-selected="true" aria-controls="jh-panel-text">Text</button>
+  <!-- Tree comes first in the bar, but the page opens on Text: that is
+       where the JSON has to go in before there is a tree to show. -->
   <button type="button" class="jh-tab" id="jh-tab-tree" role="tab" aria-selected="false" aria-controls="jh-panel-tree" tabindex="-1">Tree</button>
+  <button type="button" class="jh-tab jh-tab--active" id="jh-tab-text" role="tab" aria-selected="true" aria-controls="jh-panel-text">Text</button>
 </div>
 
 <main class="jh-main">
@@ -99,17 +101,14 @@
       <input type="file" class="jh-file" id="jh-file" accept=".json,.txt,.log,application/json,text/plain" hidden>
 
       <div class="jh-toolbar-end">
-        <label class="jh-field">
-          <span>Indent</span>
-          <select id="jh-indent" class="jh-select">
-            <option value="2">2 spaces</option>
-            <option value="4">4 spaces</option>
-            <option value="tab">Tab</option>
-          </select>
-        </label>
+        <select id="jh-indent" class="jh-select jh-select--quiet" aria-label="Indent for Format" title="Indent for Format">
+          <option value="2">Indent: 2 spaces</option>
+          <option value="4">Indent: 4 spaces</option>
+          <option value="tab">Indent: tab</option>
+        </select>
         <label class="jh-check" title="When you paste escaped JSON, unescape it automatically">
           <input type="checkbox" id="jh-auto-unescape" checked>
-          <span>Auto-unescape on paste</span>
+          <span>Auto-unescape</span>
         </label>
       </div>
     </div>
@@ -132,43 +131,48 @@
 
   <!-- ── Tree ─────────────────────────────────────────────────────────── -->
   <section class="jh-panel" id="jh-panel-tree" role="tabpanel" aria-labelledby="jh-tab-tree" hidden>
-    <div class="jh-toolbar" role="toolbar" aria-label="Tree tools">
-      <button type="button" class="jh-btn" data-tree="expand-all">
-        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-expand"/></svg><span>Expand all</span>
+    <!-- One quiet row: the filter and its options, then the expand controls.
+         Everything else on the tab is the tree itself. -->
+    <div class="jh-toolbar jh-tree-toolbar" role="toolbar" aria-label="Tree tools">
+      <input type="search" class="jh-filter" id="jh-filter" placeholder="Filter keys and values, or a $.path   ( / )" aria-label="Filter the tree" aria-describedby="jh-filter-count jh-filter-error" autocomplete="off" spellcheck="false">
+      <select class="jh-select jh-select--quiet" id="jh-filter-scope" aria-label="Match against" title="Match against">
+        <option value="both" selected>Keys &amp; values</option>
+        <option value="keys">Keys</option>
+        <option value="values">Values</option>
+      </select>
+      <button type="button" class="jh-toggle-btn" id="jh-filter-case" aria-pressed="false" title="Match case">Aa</button>
+      <button type="button" class="jh-toggle-btn" id="jh-filter-regex" aria-pressed="false" title="Regular expression">.*</button>
+      <span class="jh-filter-count" id="jh-filter-count" aria-live="polite"></span>
+      <button type="button" class="jh-icon-btn" id="jh-filter-prev" aria-label="Previous match (Shift+Enter)" title="Previous match (Shift+Enter)" disabled>
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-up"/></svg>
       </button>
-      <button type="button" class="jh-btn" data-tree="collapse-all">
-        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-collapse"/></svg><span>Collapse all</span>
+      <button type="button" class="jh-icon-btn" id="jh-filter-next" aria-label="Next match (Enter)" title="Next match (Enter)" disabled>
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-down"/></svg>
       </button>
-      <label class="jh-field">
-        <span>Level</span>
-        <input type="number" class="jh-number" id="jh-level" min="1" max="99" value="2" aria-label="Level to expand to">
-      </label>
-      <button type="button" class="jh-btn" data-tree="expand-level">Expand to level</button>
-
+      <span class="jh-toolbar-sep" aria-hidden="true"></span>
+      <button type="button" class="jh-icon-btn" data-tree="expand-all" aria-label="Expand all" title="Expand all">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-expand"/></svg>
+      </button>
+      <button type="button" class="jh-icon-btn" data-tree="collapse-all" aria-label="Collapse all" title="Collapse all">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-collapse"/></svg>
+      </button>
+      <select class="jh-select jh-select--quiet" id="jh-level" aria-label="Expand to level" title="Expand to level">
+        <option value="" selected>Level…</option>
+        <option value="1">Level 1</option>
+        <option value="2">Level 2</option>
+        <option value="3">Level 3</option>
+        <option value="4">Level 4</option>
+        <option value="5">Level 5</option>
+        <option value="6">Level 6</option>
+        <option value="8">Level 8</option>
+        <option value="10">Level 10</option>
+      </select>
+      <span class="jh-filter-error" id="jh-filter-error" role="alert"></span>
       <div class="jh-confirm" id="jh-confirm" hidden>
         <span class="jh-confirm-text"></span>
         <button type="button" class="jh-btn jh-btn--primary" data-tree="confirm-yes">Expand</button>
         <button type="button" class="jh-btn" data-tree="confirm-no">Cancel</button>
       </div>
-    </div>
-
-    <div class="jh-filter-bar" role="search">
-      <input type="search" class="jh-filter" id="jh-filter" placeholder="Filter keys and values — or a path like $.items[*].name   ( / )" aria-label="Filter the tree" aria-describedby="jh-filter-count jh-filter-error" autocomplete="off" spellcheck="false">
-      <div class="jh-seg" role="radiogroup" aria-label="Match">
-        <label><input type="radio" name="jh-scope" value="keys"><span>Keys</span></label>
-        <label><input type="radio" name="jh-scope" value="values"><span>Values</span></label>
-        <label><input type="radio" name="jh-scope" value="both" checked><span>Both</span></label>
-      </div>
-      <button type="button" class="jh-toggle-btn" id="jh-filter-case" aria-pressed="false" title="Match case">Aa</button>
-      <button type="button" class="jh-toggle-btn" id="jh-filter-regex" aria-pressed="false" title="Regular expression">.*</button>
-      <span class="jh-filter-count" id="jh-filter-count" aria-live="polite"></span>
-      <button type="button" class="jh-icon-btn" id="jh-filter-prev" aria-label="Previous match (Shift+Enter)" disabled>
-        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-up"/></svg>
-      </button>
-      <button type="button" class="jh-icon-btn" id="jh-filter-next" aria-label="Next match (Enter)" disabled>
-        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-down"/></svg>
-      </button>
-      <span class="jh-filter-error" id="jh-filter-error" role="alert"></span>
     </div>
 
     <div class="jh-tree-wrap">
@@ -184,6 +188,7 @@
 
     <div class="jh-detail" id="jh-detail" hidden>
       <code class="jh-detail-path"></code>
+      <span class="jh-detail-kind"></span>
       <span class="jh-detail-actions">
         <button type="button" class="jh-btn" data-tree="copy-path">
           <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-copy"/></svg><span>Copy path</span>

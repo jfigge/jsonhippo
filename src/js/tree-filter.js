@@ -41,6 +41,7 @@ export class TreeFilter {
     this.isActive = isActive;
 
     this.$input = $panel.find("#jh-filter");
+    this.$scope = $panel.find("#jh-filter-scope");
     this.$case = $panel.find("#jh-filter-case");
     this.$regex = $panel.find("#jh-filter-regex");
     this.$count = $panel.find("#jh-filter-count");
@@ -63,7 +64,7 @@ export class TreeFilter {
 
   get options() {
     return {
-      scope: String(this.$panel.find('input[name="jh-scope"]:checked').val() ?? "both"),
+      scope: String(this.$scope.val() ?? "both"),
       caseSensitive: this.$case.attr("aria-pressed") === "true",
       regex: this.$regex.attr("aria-pressed") === "true",
     };
@@ -170,7 +171,7 @@ export class TreeFilter {
       }
     });
 
-    this.$panel.on("change", 'input[name="jh-scope"]', () => this.run());
+    this.$scope.on("change", () => this.run());
 
     for (const $btn of [this.$case, this.$regex]) {
       $btn.on("click", () => {

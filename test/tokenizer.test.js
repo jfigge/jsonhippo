@@ -16,7 +16,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { Tokenizer, TokenType as T, decodeStringLiteral } from "../src/js/parser/tokenizer.js";
+import { Tokenizer, TokenType as T, decodeStringLiteral, decodeEscapesLoosely } from "../src/js/parser/tokenizer.js";
 import { makeLargeText } from "./fixtures/generate.js";
 import { bestTime, catchError } from "./helpers.js";
 
@@ -144,6 +144,14 @@ describe("strings", () => {
 
   test("raw is the source text including quotes", () => {
     assert.equal(tokens(String.raw`"a\nb"`)[0].raw, String.raw`"a\nb"`);
+  });
+
+  test("decodeEscapesLoosely: the same escapes, raw characters passed through", () => {
+    assert.equal(decodeEscapesLoosely(String.raw`\"a\" \\ \/ \n é 🦛`), '"a" \\ / \n é 🦛');
+    assert.equal(decodeEscapesLoosely('raw\nline "quote"\ttab'), 'raw\nline "quote"\ttab');
+    assert.throws(() => decodeEscapesLoosely(String.raw`bad \x`), { code: "BAD_ESCAPE" });
+    assert.throws(() => decodeEscapesLoosely(String.raw`bad \u12G4`), { code: "BAD_UNICODE_ESCAPE" });
+    assert.throws(() => decodeEscapesLoosely("ends in a backslash \\"));
   });
 
   test("decodeStringLiteral uses the same rules", () => {

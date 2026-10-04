@@ -538,3 +538,27 @@ export function decodeStringLiteral(literal) {
   }
   return token.value;
 }
+
+/**
+ * Decode the escapes in `body` — the inside of a string literal, without its
+ * quotes — with the tokenizer's own escape code (scanEscape), but copy every
+ * other character through as it is: raw line breaks, tabs and unescaped
+ * quotes included, where a real string literal would reject them.
+ *
+ * Smart paste needs this for escaped JSON copied out of logs and source code,
+ * which was often pretty-printed before it was quoted, so its line breaks were
+ * never escaped. The escapes themselves are still held to the full rules: an
+ * invalid one (\x, \u12G4, a backslash at the very end) throws JsonHippoError.
+ */
+export function decodeEscapesLoosely(body) {
+  const tokens = new Tokenizer(body);
+  let out = "";
+  let chunkStart = 0;
+  for (let i = body.indexOf("\\"); i !== -1; i = body.indexOf("\\", i)) {
+    out += body.slice(chunkStart, i);
+    i = tokens.scanEscape(i, i);
+    out += tokens.escapeValue;
+    chunkStart = i;
+  }
+  return out + body.slice(chunkStart);
+}

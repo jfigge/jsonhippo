@@ -79,6 +79,55 @@ describe("never alters normal JSON", () => {
   });
 });
 
+describe("forgiving about everything but the escapes", () => {
+  const lines = (...l) => l.join("\n");
+  // Pretty-printed JSON quoted without escaping its line breaks — how escaped
+  // JSON usually looks in a log, or as a string constant in source code.
+  const pretty = lines(String.raw`"{`, String.raw`  \"id\": 7,`, String.raw`  \"tags\": [\"a\"]`, String.raw`}"`);
+  const prettyDecoded = lines("{", '  "id": 7,', '  "tags": ["a"]', "}");
+
+  test("raw line breaks inside the quotes are kept as line breaks", () => {
+    assert.deepEqual(detectAndUnescape(pretty), { text: prettyDecoded, levels: 1, mode: "quoted" });
+  });
+
+  test("raw tabs too", () => {
+    assert.equal(detectAndUnescape(`"{\t${String.raw`\"a\": 1`}}"`).text, '{\t"a": 1}');
+  });
+
+  test("bare escaped JSON with raw line breaks", () => {
+    assert.deepEqual(detectAndUnescape(pretty.slice(1, -1)), { text: prettyDecoded, levels: 1, mode: "bare" });
+  });
+
+  test("a stray unescaped quote is kept, so the parser can point at it", () => {
+    const pasted = lines(String.raw`"{`, String.raw`  \"rate\": null"`, String.raw`}"`);
+    const result = detectAndUnescape(pasted);
+    assert.equal(result.text, lines("{", '  "rate": null"', "}"));
+    const err = catchError(() => parse(result.text));
+    assert.deepEqual([err.code, err.line, err.column, err.path], ["UNTERMINATED_STRING", 2, 15, "$"]);
+    assert.match(err.hint, /stray/);
+  });
+
+  test("the paste that prompted this: escaped twice over, once by hand", () => {
+    const [, text] = fixtures("escaped").find(([name]) => name === "broken-stray-quote.txt");
+    const err = catchError(() => parse(detectAndUnescape(text).text));
+    assert.deepEqual([err.code, err.line, err.column, err.path], ["UNTERMINATED_STRING", 11, 23, "$.metrics"]);
+  });
+
+  test("an invalid escape still means it is not escaped JSON", () => {
+    assert.equal(detectAndUnescape(String.raw`"{\"path\": \"C:\x\"}"`), null);
+  });
+
+  test("quoted text that is not JSON inside is still left alone", () => {
+    assert.equal(detectAndUnescape('"a" and "b"'), null);
+    assert.equal(detectAndUnescape(lines('"line one', 'line two"')), null);
+  });
+
+  test("the bare form never touches JSON that has unescaped quotes", () => {
+    assert.equal(detectAndUnescape(lines("{", String.raw`  "a": "x,\"y"`, "}")), null);
+    assert.equal(detectAndUnescape(lines("[", String.raw`  "a",\"b"`, "]")), null);
+  });
+});
+
 describe("details", () => {
   test("surrounding whitespace is ignored", () => {
     assert.equal(detectAndUnescape(`\n  ${String.raw`"[1,\"two\"]"`}  \n`).text, '[1,"two"]');

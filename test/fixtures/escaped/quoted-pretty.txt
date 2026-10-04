@@ -1,0 +1,20 @@
+"{
+  \"dataset_metadata\": {
+    \"version\": \"2.5.1\",
+    \"generated_at\": \"2026-10-03T10:40:00Z\",
+    \"total_records\": 3,
+    \"active_environment\": true
+  },
+  \"metrics\": {
+    \"cpu_load_avg\": [0.45, 0.58, 0.72],
+    \"memory_usage_mb\": 4096.5,
+    \"error_rate\": null
+  },
+  \"records\": [
+    {
+      \"id\": \"usr_9021\",
+      \"type\": \"user\",
+      \"tags\": [\"admin\", \"eu-central\", \"verified\"]
+    }
+  ]
+}"

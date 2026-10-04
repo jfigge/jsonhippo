@@ -71,9 +71,14 @@ const MAX_SHOWN = 300;
 const ICON = (name, cls = "") => `<svg class="jh-icon${cls}" aria-hidden="true"><use href="#jh-i-${name}"/></svg>`;
 const CHEVRON = `<span class="jh-toggle" aria-hidden="true">${ICON("chevron")}</span>`;
 const NO_TOGGLE = '<span class="jh-toggle jh-toggle--none" aria-hidden="true"></span>';
-const TYPE_ICONS = Object.fromEntries(
-  ["object", "array", "string", "number", "boolean", "null"].map((k) => [k, ICON(k, ` jh-type jh-type--${k}`)]),
-);
+
+// The row is kept quiet so the data reads first. Containers carry a { } or
+// [ ] mark (told apart by shape); scalars carry one small dot, the same for
+// every type, because the value already says what it is — "text", 12, true,
+// null. Counts are not shown on rows: an open container shows its children,
+// and a selected one states its size in the detail bar.
+const MARK = { object: ICON("object", " jh-type"), array: ICON("array", " jh-type") };
+const DOT = '<span class="jh-dot" aria-hidden="true"></span>';
 
 /**
  * Control characters shown as their Unicode "control pictures" (\n → ␊).
@@ -89,6 +94,13 @@ function highlighted(text, range) {
   if (!range || range[1] <= range[0] || range[0] >= text.length) return escapeHtml(text);
   const [s, e] = [range[0], Math.min(range[1], text.length)];
   return `${escapeHtml(text.slice(0, s))}<mark class="jh-hl">${escapeHtml(text.slice(s, e))}</mark>${escapeHtml(text.slice(e))}`;
+}
+
+/** "object · 5 keys", "array · 3 items", "string" — for the detail bar. */
+function describeNode(node) {
+  if (node.kind === "object") return `object · ${plural(node.entries.length, "key")}`;
+  if (node.kind === "array") return `array · ${plural(node.items.length, "item")}`;
+  return node.kind;
 }
 
 function childCount(node) {
@@ -294,26 +306,29 @@ export class TreeView {
     if (f && f.current === node) cls += " jh-node--match-current";
     if (this.selected === node) cls += " jh-node--selected";
 
-    // Key: the member name, the array index, or $ for the root.
+    // Label: the member name, the array index, or "JSON" for the root.
     let key;
-    if (rec.parent === null) key = '<span class="jh-key jh-key--index">$</span>';
-    else if (typeof rec.seg === "number") key = `<span class="jh-key jh-key--index">${rec.seg}</span><span class="jh-colon">:</span>`;
-    else key = `<span class="jh-key">${highlighted(visible(rec.seg), match?.key)}</span><span class="jh-colon">:</span>`;
+    if (rec.parent === null) key = '<span class="jh-key jh-key--root">JSON</span>';
+    else if (typeof rec.seg === "number") key = `<span class="jh-key jh-key--index">${rec.seg}</span>`;
+    else key = `<span class="jh-key">${highlighted(visible(rec.seg), match?.key)}</span>`;
 
-    let value;
+    let rest = "";
     if (container) {
+      // Under a filter, a container that has lost children says so — the
+      // one count that is not visible any other way.
       const n = childCount(node);
       const kids = f && !rec.insideMatch && !f.matches.has(node) ? this.kidsOf(rec) : null;
-      const shownOf = kids && kids.length < n ? `${formatCount(kids.length)} of ${formatCount(n)}` : formatCount(n);
-      value = node.kind === "object" ? `<span class="jh-count">{ ${shownOf} }</span>` : `<span class="jh-count">[ ${shownOf} ]</span>`;
+      if (kids && kids.length < n) {
+        rest = `<span class="jh-count" title="The filter hides the rest">${formatCount(kids.length)} of ${formatCount(n)}</span>`;
+      }
     } else {
-      value = this.scalarHtml(node, match?.value);
+      rest = `<span class="jh-colon">:</span>${this.scalarHtml(node, match?.value)}`;
     }
 
     const aria = container ? ` aria-expanded="${open}"` : "";
     let html =
       `<li class="${cls}" role="treeitem" aria-level="${rec.depth + 1}"${aria} aria-selected="${this.selected === node}" tabindex="-1" data-id="${rec.id}">` +
-      `<div class="jh-row">${container ? CHEVRON : NO_TOGGLE}${TYPE_ICONS[node.kind]}${key}${value}</div>`;
+      `<div class="jh-row">${container ? CHEVRON : NO_TOGGLE}${container ? MARK[node.kind] : DOT}${key}${rest}</div>`;
     if (open) {
       rec.rendered = true;
       html += this.childrenHtml(rec, bulkDepth + 1);
@@ -532,7 +547,10 @@ export class TreeView {
   updateDetail() {
     const rec = this.selectedRec();
     this.$detail.prop("hidden", !rec);
-    if (rec) this.$detail.find(".jh-detail-path").text(this.pathOf(rec)).attr("title", this.pathOf(rec));
+    if (rec) {
+      this.$detail.find(".jh-detail-path").text(this.pathOf(rec)).attr("title", this.pathOf(rec));
+      this.$detail.find(".jh-detail-kind").text(describeNode(rec.node));
+    }
     this.onSelect(rec ? { node: rec.node, path: this.pathOf(rec) } : null);
   }
 
@@ -625,12 +643,6 @@ export class TreeView {
         case "collapse-all":
           if (this.ast) this.collapseAll();
           break;
-        case "expand-level": {
-          const level = Math.max(1, Math.min(99, parseInt(this.$level.val(), 10) || 1));
-          this.$level.val(level);
-          if (this.ast) this.expandToLevel(level);
-          break;
-        }
         case "confirm-yes": {
           const run = this.pendingConfirm;
           this.hideConfirm();
@@ -655,8 +667,12 @@ export class TreeView {
       }
     });
 
-    this.$level.on("keydown", (e) => {
-      if (e.key === "Enter") this.$panel.find('[data-tree="expand-level"]').trigger("click");
+    // A menu of levels rather than a number box and a button: one control.
+    // It snaps back to "Level…" so the same level can be chosen again.
+    this.$level.on("change", () => {
+      const level = parseInt(String(this.$level.val()), 10);
+      this.$level.val("");
+      if (this.ast && level > 0) this.expandToLevel(level);
     });
   }
 

@@ -190,7 +190,7 @@ class Parser {
         const frame = this.top();
         if (frame === undefined) return node;
         this.addChild(frame, node);
-        const after = this.tokens.next();
+        const after = this.nextAfterValue(frame);
         if (after.type === T.COMMA) {
           token = this.beginNextChild(frame, after);
           break;
@@ -341,6 +341,25 @@ class Parser {
     } else {
       frame.node.items.push(node);
       frame.index = null;
+    }
+  }
+
+  /**
+   * The token after a complete child value. When a string opens here and
+   * never closes, the tokenizer's UNTERMINATED_STRING is right about the
+   * position but its hint ("the closing quote is missing") usually is not:
+   * a quote straight after a finished value — `"rate": null"` — is almost
+   * always one quote too many, not one too few. Same code, same position;
+   * only the hint changes.
+   */
+  nextAfterValue(frame) {
+    try {
+      return this.tokens.next();
+    } catch (err) {
+      if (err instanceof JsonHippoError && err.code === "UNTERMINATED_STRING") {
+        err.hint = `Is this '"' stray? It comes straight after a complete value, where only ',' or '${CLOSE_CHAR[frame.kind]}' can go.`;
+      }
+      throw err;
     }
   }
 

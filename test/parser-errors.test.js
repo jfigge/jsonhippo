@@ -163,6 +163,17 @@ describe("error details", () => {
     assert.equal(err.openStack.length, 3);
   });
 
+  test("a quote straight after a complete value is called stray, not unclosed", () => {
+    const err = catchError(() => parse('{\n  "rate": null"\n}'));
+    assert.deepEqual([err.code, err.line, err.column], ["UNTERMINATED_STRING", 2, 15]);
+    assert.match(err.hint, /Is this '"' stray\? .* only ',' or '\}' can go/);
+    assert.match(catchError(() => parse('[1, 2"\n]')).hint, /only ',' or '\]' can go/);
+  });
+
+  test("an unclosed string where a value belongs keeps the closing-quote hint", () => {
+    assert.match(catchError(() => parse('{\n  "name": "Ada,\n  "x": 1\n}')).hint, /closing quote is missing/);
+  });
+
   test("TRAILING_COMMA selects the comma; the hint says to remove it", () => {
     const err = catchError(() => parse("[1,2,]"));
     assert.deepEqual([err.offset, err.endOffset], [4, 5]);

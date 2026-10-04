@@ -43,7 +43,7 @@ build step: the browser loads `src/` as it is.
 | Target | Does |
 |---|---|
 | `make` / `make help` | Lists the targets |
-| `make serve` | Serves `src/` on `http://localhost:8080` (`PORT=…` to change) |
+| `make serve` | Serves `src/` on `http://localhost:8080` with caching off, so a reload always runs the current code (`PORT=…` to change) |
 | `make test` | Unit tests: `node --test`, no framework |
 | `make lint` | ESLint over `src/js`, `test` and `scripts` |
 | `make validate` | html-validate over the app page and the hippoherd page |
@@ -105,6 +105,7 @@ test/
 scripts/
   browser.js              minimal headless-Chrome driver (Node built-ins only)
   screenshots.js          `make screenshots`
+  serve.py                `make serve`: http.server with caching turned off
 site/hippoherd/           the hippoherd.com product page; `make site` publishes it
                           (see its README)
 docs/

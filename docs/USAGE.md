@@ -30,7 +30,14 @@ Paste that and JsonHippo unescapes it and shows the JSON inside. It handles:
 - **quoted** strings like the one above;
 - **bare** escaped JSON with no outer quotes, as copied out of the middle of a
   log line: `{\"id\":7}`;
-- JSON that was **escaped more than once** (up to 5 levels).
+- JSON that was **escaped more than once** (up to 5 levels);
+- escaped JSON that was **pretty-printed before it was quoted**, so its line
+  breaks were never escaped — they are kept as line breaks.
+
+Only the escapes have to be right (`\"`, `\\`, `\n`, `é` and the rest).
+Anything else odd in the pasted text, such as a stray unescaped `"`, is passed
+through as it is, and the parser then reports it at its exact position, with
+a hint that names a stray quote as one.
 
 A notice says what happened ("Unescaped 2 levels of escaped JSON") with an
 **Undo** that puts back exactly what you pasted. Undo stays available through
@@ -43,7 +50,8 @@ inside its strings, and it leaves a plain string such as `"hello"` alone — tha
 is valid JSON already.
 
 - **Unescape** on the toolbar does the same thing on demand.
-- **Auto-unescape on paste** turns the automatic behaviour off.
+- **Auto-unescape** (the checkbox on the toolbar) turns the automatic
+  behaviour off.
 
 If the unescaped text is itself broken, the error is reported against the
 unescaped text, and Undo is still there.
@@ -79,8 +87,8 @@ to the second one.
 
 ## Format, minify, copy
 
-- **Format** pretty-prints with the indent chosen in **Indent** (2 spaces,
-  4 spaces or a tab). Shortcut: <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd>.
+- **Format** pretty-prints with the indent chosen in the **Indent** menu
+  (2 spaces, 4 spaces or a tab). Shortcut: <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd>.
 - **Minify** removes all whitespace outside strings.
 - Both are written from the parsed document, so numbers keep every digit
   (`12345678901234567890` stays as it is), strings keep their escapes, and keys
@@ -95,17 +103,22 @@ and its first level; containers fill in when you open them, so large
 documents stay quick. Arrays with more than 10,000 items show them a page at a
 time, with **Show more** and **Show all** at the end.
 
-Each row shows the key (or the array index), a type icon — `{}` object,
-`[]` array, quote marks for a string, `#` for a number, a switch for a boolean,
-a slashed circle for null — and the value, or for a container how many children
-it has. Control characters in strings are shown as symbols (a newline is `␊`).
+The tree is kept plain so the data reads first. An object or array row shows a
+`{ }` or `[ ]` mark and its key; a value row shows a small dot, the key and the
+value — the value itself says what type it is (`"text"`, `12`, `true`, `null`).
+Array items are labelled with their index, and the root with **JSON**. Control
+characters in strings are shown as symbols (a newline is `␊`).
 
-- **Expand all** opens everything (it asks first above 5,000 nodes).
-- **Collapse all** closes everything but the root.
-- **Expand to level** opens every container above the level you enter
-  (level 1 is the root's children).
+The two buttons and the menu at the right of the toolbar:
 
-Select a row to see its **path** in the bar at the bottom, with:
+- **Expand all** (the down-chevron) opens everything; it asks first above
+  5,000 nodes.
+- **Collapse all** (the up-chevron) closes everything but the root.
+- **Level…** opens every container above the level you pick (level 1 is the
+  root's children).
+
+Select a row to see its **path** in the bar at the bottom, with its type and,
+for an object or array, its size (`object · 5 keys`), plus:
 
 - **Copy path** — e.g. `$.items[3]["first name"]`;
 - **Copy value** — that node formatted on its own;
@@ -119,10 +132,11 @@ tree, with **Go to error**.
 Type in the filter box (or press <kbd>/</kbd> on the Tree tab to jump to it).
 The tree narrows to the nodes that match, each with the chain of containers
 that leads to it; everything else is folded away, and a container that has
-lost some children shows how many it still shows: `{ 1 of 9 }`.
+lost some children says how many it still shows: `1 of 9`.
 
-- **Keys / Values / Both** — what to match against. Values are strings,
-  numbers (as written), `true`, `false` and `null`.
+- **Keys & values / Keys / Values** — the menu beside the box: what to match
+  against. Values are strings, numbers (as written), `true`, `false` and
+  `null`.
 - **Aa** — match case. Off by default.
 - **.\*** — treat the filter as a regular expression. A broken regex is
   reported under the box and the tree is left as it was.

@@ -62,9 +62,10 @@ node_modules: package.json package-lock.json
 
 install: node_modules
 
+# scripts/serve.py is `python3 -m http.server` plus Cache-Control: no-store,
+# so a plain reload always runs the modules on disk, never a cached copy.
 serve:
-	@echo "JsonHippo at http://localhost:$(PORT)/  (Ctrl-C to stop)"
-	python3 -m http.server $(PORT) --bind 127.0.0.1 -d "$(SRC_DIR)"
+	python3 scripts/serve.py $(PORT) "$(SRC_DIR)"
 
 test:
 	node --test test/*.test.js
@@ -118,5 +119,5 @@ preview-site: stage-site
 	cp -R "$(HIPPOHERD)/website/." "$(BUILD_DIR)/site/"
 	rsync -a --delete "$(SITE_STAGE)/" "$(BUILD_DIR)/site/jsonhippo/"
 	cp "$(SRC_DIR)/img/jsonhippo.svg" "$(BUILD_DIR)/site/marks/jsonhippo.svg"
-	@echo "Product page at http://localhost:$(SITE_PORT)/jsonhippo/  (Ctrl-C to stop)"
-	python3 -m http.server $(SITE_PORT) --bind 127.0.0.1 -d "$(BUILD_DIR)/site"
+	@echo "Product page at http://localhost:$(SITE_PORT)/jsonhippo/"
+	python3 scripts/serve.py $(SITE_PORT) "$(BUILD_DIR)/site"
