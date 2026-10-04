@@ -1,0 +1,18 @@
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist/
+build/
+
+# ── Generated large fixtures (`make fixtures`; regenerated deterministically) ─
+test/fixtures/large/
+
+# ── Node / npm ────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ── Editor / IDE ──────────────────────────────────────────────────────────────
+*.swp
+.vscode/
+.idea/

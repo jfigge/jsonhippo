@@ -1,0 +1,139 @@
+{
+  "expected-value.json": {
+    "code": "EXPECTED_VALUE",
+    "line": 3,
+    "column": 19,
+    "path": "$.langs[1]"
+  },
+  "expected-key.json": {
+    "code": "EXPECTED_KEY",
+    "line": 3,
+    "column": 3,
+    "path": "$"
+  },
+  "expected-key--comment.json": {
+    "code": "EXPECTED_KEY",
+    "line": 2,
+    "column": 3,
+    "path": "$"
+  },
+  "expected-key--curly-quotes.json": {
+    "code": "EXPECTED_KEY",
+    "line": 1,
+    "column": 2,
+    "path": "$"
+  },
+  "expected-key--escaped-json.txt": {
+    "code": "EXPECTED_KEY",
+    "line": 1,
+    "column": 2,
+    "path": "$"
+  },
+  "expected-colon.json": {
+    "code": "EXPECTED_COLON",
+    "line": 3,
+    "column": 10,
+    "path": "$.name"
+  },
+  "expected-comma-or-close.json": {
+    "code": "EXPECTED_COMMA_OR_CLOSE",
+    "line": 6,
+    "column": 7,
+    "path": "$.items[0]"
+  },
+  "trailing-comma.json": {
+    "code": "TRAILING_COMMA",
+    "line": 4,
+    "column": 8,
+    "path": "$.tags"
+  },
+  "mismatched-close.json": {
+    "code": "MISMATCHED_CLOSE",
+    "line": 3,
+    "column": 13,
+    "path": "$.matrix[0]"
+  },
+  "unclosed-container.json": {
+    "code": "UNCLOSED_CONTAINER",
+    "line": 1,
+    "column": 1,
+    "path": "$"
+  },
+  "unclosed-container--nested.json": {
+    "code": "UNCLOSED_CONTAINER",
+    "line": 4,
+    "column": 5,
+    "path": "$.a[1]"
+  },
+  "trailing-content.json": {
+    "code": "TRAILING_CONTENT",
+    "line": 2,
+    "column": 1,
+    "path": "$"
+  },
+  "empty-input.json": {
+    "code": "EMPTY_INPUT",
+    "line": 1,
+    "column": 1,
+    "path": "$"
+  },
+  "max-depth.json": {
+    "code": "MAX_DEPTH",
+    "line": 1,
+    "column": 10001
+  },
+  "unterminated-string.json": {
+    "code": "UNTERMINATED_STRING",
+    "line": 2,
+    "column": 11,
+    "path": "$.name"
+  },
+  "bad-escape.json": {
+    "code": "BAD_ESCAPE",
+    "line": 1,
+    "column": 13,
+    "path": "$.path"
+  },
+  "bad-unicode-escape.json": {
+    "code": "BAD_UNICODE_ESCAPE",
+    "line": 1,
+    "column": 11,
+    "path": "$.e"
+  },
+  "control-char-in-string.json": {
+    "code": "CONTROL_CHAR_IN_STRING",
+    "line": 1,
+    "column": 12,
+    "path": "$.cols"
+  },
+  "control-char-in-string--newline.json": {
+    "code": "CONTROL_CHAR_IN_STRING",
+    "line": 2,
+    "column": 25,
+    "path": "$.poem"
+  },
+  "bad-number.json": {
+    "code": "BAD_NUMBER",
+    "line": 1,
+    "column": 9,
+    "path": "$.zip"
+  },
+  "bad-literal.json": {
+    "code": "BAD_LITERAL",
+    "line": 1,
+    "column": 12,
+    "path": "$.active"
+  },
+  "unexpected-char.json": {
+    "code": "UNEXPECTED_CHAR",
+    "line": 1,
+    "column": 10,
+    "path": "$.name"
+  },
+  "unexpected-char--nbsp.json": {
+    "code": "UNEXPECTED_CHAR",
+    "line": 2,
+    "column": 7,
+    "path": "$.a"
+  }
+}

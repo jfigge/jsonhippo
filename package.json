@@ -1,0 +1,28 @@
+{
+  "name": "jsonhippo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A JSON viewer that tells you exactly where it broke.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Jason Figge",
+  "homepage": "https://hippoherd.com/jsonhippo/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jfigge/jsonhippo.git"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "lint": "eslint src/js test scripts",
+    "validate": "html-validate src/index.html site/hippoherd/jsonhippo.html"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "html-validate": "~10.11.3"
+  }
+}

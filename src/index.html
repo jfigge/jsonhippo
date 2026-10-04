@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Pasted JSON is untrusted text that ends up in the DOM, so no inline
+       script and no inline style attributes anywhere: every script is a file,
+       and the only third-party origin is the pinned jQuery on cdnjs. Styles
+       set from JS go through element.style (CSSOM), which style-src allows. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A JSON viewer that tells you exactly where it broke: pinpoint errors, smart paste of escaped JSON, and a tree you can filter.">
+  <meta name="color-scheme" content="light dark">
+  <title>JsonHippo — JSON viewer, formatter and validator</title>
+  <link rel="icon" type="image/svg+xml" href="img/jsonhippo.svg">
+  <link rel="stylesheet" href="css/app.css">
+  <!-- Applies the saved theme before first paint, so there is no flash. -->
+  <script src="js/theme.js"></script>
+  <!-- jQuery for the tree and filter. If cdnjs is blocked, app.js loads
+       vendor/jquery.min.js (the same file, byte for byte) instead. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js" integrity="sha512-8LENNbXmzI/Gbj+OwXmqR6V4QaUAw0/porPzy1+dQoJqC0JPHedWoe0DDOTL2uHA5XXJyIsPtiMHH86pVlay6A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+
+<!-- Icon sprite. Every icon is drawn in currentColor and told apart by its
+     shape, never by colour alone. -->
+<svg class="jh-sprite" aria-hidden="true" focusable="false">
+  <symbol id="jh-i-object" viewBox="0 0 16 16"><path d="M5.5 2.5C4 2.5 4 3.5 4 4.5v1.8C4 7.3 3.4 8 2.5 8c.9 0 1.5.7 1.5 1.7v1.8c0 1 0 2 1.5 2M10.5 2.5c1.5 0 1.5 1 1.5 2v1.8c0 1 .6 1.7 1.5 1.7-.9 0-1.5.7-1.5 1.7v1.8c0 1 0 2-1.5 2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-array" viewBox="0 0 16 16"><path d="M5.5 2.5H3.5v11h2M10.5 2.5h2v11h-2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-string" viewBox="0 0 16 16"><path d="M3 3.5v3M5.5 3.5v3M10.5 3.5v3M13 3.5v3M3 11.5h10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-number" viewBox="0 0 16 16"><path d="M6.5 2.5l-1 11M11 2.5l-1 11M3 6h10.5M2.5 10H13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-boolean" viewBox="0 0 16 16"><rect x="1.5" y="4.5" width="13" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="11" cy="8" r="2" fill="currentColor"/></symbol>
+  <symbol id="jh-i-null" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4.2 11.8l7.6-7.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-chevron" viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-format" viewBox="0 0 16 16"><path d="M2.5 3.5h11M5 6.5h8.5M5 9.5h8.5M2.5 12.5h11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-minify" viewBox="0 0 16 16"><path d="M2.5 6h11M2.5 10h11M8 1.5V4.5M6.5 3L8 4.5 9.5 3M8 14.5v-3M6.5 13L8 11.5 9.5 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-unescape" viewBox="0 0 16 16"><path d="M3 2.5l4.5 11M10 3.5v3M12.5 3.5v3M9.5 12.5h4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="jh-i-clear" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-open" viewBox="0 0 16 16"><path d="M1.5 4V12.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V5.5a1 1 0 0 0-1-1H8L6.5 2.5h-4a1 1 0 0 0-1 1.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-expand" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-collapse" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 2.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-up" viewBox="0 0 16 16"><path d="M3.5 10.5L8 6l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-down" viewBox="0 0 16 16"><path d="M3.5 5.5L8 10l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-system" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/></symbol>
+  <symbol id="jh-i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="jh-i-moon" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></symbol>
+</svg>
+
+<header class="jh-header">
+  <a class="jh-brand" href="./" aria-label="JsonHippo home">
+    <img class="jh-logo" src="img/jsonhippo.svg" width="28" height="28" alt="">
+    <span class="jh-name">JsonHippo</span>
+  </a>
+  <span class="jh-tagline">A JSON viewer that tells you exactly where it broke</span>
+  <div class="jh-header-actions">
+    <button type="button" class="jh-btn jh-btn--ghost" id="jh-theme" aria-label="Theme: follow the system">
+      <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-system"/></svg>
+      <span class="jh-theme-label">System</span>
+    </button>
+    <a class="jh-btn jh-btn--ghost" href="https://github.com/jfigge/jsonhippo" rel="noopener noreferrer">
+      <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-github"/></svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+</header>
+
+<div class="jh-tabs" role="tablist" aria-label="View">
+  <button type="button" class="jh-tab jh-tab--active" id="jh-tab-text" role="tab" aria-selected="true" aria-controls="jh-panel-text">Text</button>
+  <button type="button" class="jh-tab" id="jh-tab-tree" role="tab" aria-selected="false" aria-controls="jh-panel-tree" tabindex="-1">Tree</button>
+</div>
+
+<main class="jh-main">
+
+  <!-- ── Text ─────────────────────────────────────────────────────────── -->
+  <section class="jh-panel" id="jh-panel-text" role="tabpanel" aria-labelledby="jh-tab-text">
+    <div class="jh-toolbar" role="toolbar" aria-label="Text tools">
+      <button type="button" class="jh-btn" data-action="format" title="Pretty-print (Ctrl/⌘+Enter)">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-format"/></svg><span>Format</span>
+      </button>
+      <button type="button" class="jh-btn" data-action="minify" title="Remove all whitespace">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-minify"/></svg><span>Minify</span>
+      </button>
+      <button type="button" class="jh-btn" data-action="unescape" title="Unescape escaped JSON">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-unescape"/></svg><span>Unescape</span>
+      </button>
+      <span class="jh-toolbar-sep" aria-hidden="true"></span>
+      <button type="button" class="jh-btn" data-action="copy" title="Copy to the clipboard">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-copy"/></svg><span>Copy</span>
+      </button>
+      <button type="button" class="jh-btn" data-action="clear" title="Clear the text">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-clear"/></svg><span>Clear</span>
+      </button>
+      <button type="button" class="jh-btn" data-action="open" title="Load a file from this computer (it is read locally, never uploaded)">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-open"/></svg><span>Load from file</span>
+      </button>
+      <input type="file" class="jh-file" id="jh-file" accept=".json,.txt,.log,application/json,text/plain" hidden>
+
+      <div class="jh-toolbar-end">
+        <label class="jh-field">
+          <span>Indent</span>
+          <select id="jh-indent" class="jh-select">
+            <option value="2">2 spaces</option>
+            <option value="4">4 spaces</option>
+            <option value="tab">Tab</option>
+          </select>
+        </label>
+        <label class="jh-check" title="When you paste escaped JSON, unescape it automatically">
+          <input type="checkbox" id="jh-auto-unescape" checked>
+          <span>Auto-unescape on paste</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="jh-notice" id="jh-notice" role="status" hidden>
+      <span class="jh-notice-text"></span>
+      <button type="button" class="jh-link" data-action="undo-unescape">Undo</button>
+      <button type="button" class="jh-notice-close" data-action="dismiss-notice" aria-label="Dismiss">×</button>
+    </div>
+
+    <div class="jh-editor">
+      <div class="jh-gutter" aria-hidden="true"><div class="jh-gutter-lines"></div></div>
+      <div class="jh-input-wrap">
+        <div class="jh-error-band" hidden></div>
+        <div class="jh-error-mark" hidden></div>
+        <textarea id="jh-input" class="jh-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="JSON input" placeholder="Paste JSON here, type it, or load a file. Escaped JSON is unescaped automatically on paste."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Tree ─────────────────────────────────────────────────────────── -->
+  <section class="jh-panel" id="jh-panel-tree" role="tabpanel" aria-labelledby="jh-tab-tree" hidden>
+    <div class="jh-toolbar" role="toolbar" aria-label="Tree tools">
+      <button type="button" class="jh-btn" data-tree="expand-all">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-expand"/></svg><span>Expand all</span>
+      </button>
+      <button type="button" class="jh-btn" data-tree="collapse-all">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-collapse"/></svg><span>Collapse all</span>
+      </button>
+      <label class="jh-field">
+        <span>Level</span>
+        <input type="number" class="jh-number" id="jh-level" min="1" max="99" value="2" aria-label="Level to expand to">
+      </label>
+      <button type="button" class="jh-btn" data-tree="expand-level">Expand to level</button>
+
+      <div class="jh-confirm" id="jh-confirm" hidden>
+        <span class="jh-confirm-text"></span>
+        <button type="button" class="jh-btn jh-btn--primary" data-tree="confirm-yes">Expand</button>
+        <button type="button" class="jh-btn" data-tree="confirm-no">Cancel</button>
+      </div>
+    </div>
+
+    <div class="jh-filter-bar" role="search">
+      <input type="search" class="jh-filter" id="jh-filter" placeholder="Filter keys and values — or a path like $.items[*].name   ( / )" aria-label="Filter the tree" aria-describedby="jh-filter-count jh-filter-error" autocomplete="off" spellcheck="false">
+      <div class="jh-seg" role="radiogroup" aria-label="Match">
+        <label><input type="radio" name="jh-scope" value="keys"><span>Keys</span></label>
+        <label><input type="radio" name="jh-scope" value="values"><span>Values</span></label>
+        <label><input type="radio" name="jh-scope" value="both" checked><span>Both</span></label>
+      </div>
+      <button type="button" class="jh-toggle-btn" id="jh-filter-case" aria-pressed="false" title="Match case">Aa</button>
+      <button type="button" class="jh-toggle-btn" id="jh-filter-regex" aria-pressed="false" title="Regular expression">.*</button>
+      <span class="jh-filter-count" id="jh-filter-count" aria-live="polite"></span>
+      <button type="button" class="jh-icon-btn" id="jh-filter-prev" aria-label="Previous match (Shift+Enter)" disabled>
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-up"/></svg>
+      </button>
+      <button type="button" class="jh-icon-btn" id="jh-filter-next" aria-label="Next match (Enter)" disabled>
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-down"/></svg>
+      </button>
+      <span class="jh-filter-error" id="jh-filter-error" role="alert"></span>
+    </div>
+
+    <div class="jh-tree-wrap">
+      <ul class="jh-tree" id="jh-tree" role="tree" aria-label="JSON tree"></ul>
+      <div class="jh-tree-message" id="jh-tree-message" hidden>
+        <p class="jh-tree-message-title"></p>
+        <p class="jh-tree-message-hint"></p>
+        <button type="button" class="jh-btn jh-btn--primary" data-tree="go-to-error" hidden>
+          <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-target"/></svg><span>Go to error</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="jh-detail" id="jh-detail" hidden>
+      <code class="jh-detail-path"></code>
+      <span class="jh-detail-actions">
+        <button type="button" class="jh-btn" data-tree="copy-path">
+          <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-copy"/></svg><span>Copy path</span>
+        </button>
+        <button type="button" class="jh-btn" data-tree="copy-value">
+          <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-copy"/></svg><span>Copy value</span>
+        </button>
+        <button type="button" class="jh-btn" data-tree="show-in-text">
+          <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-target"/></svg><span>Show in text</span>
+        </button>
+      </span>
+    </div>
+  </section>
+</main>
+
+<footer class="jh-status" id="jh-status" role="status" aria-live="polite">
+  <span class="jh-status-main">Paste JSON, type it, or load a file.</span>
+</footer>
+
+</body>
+</html>

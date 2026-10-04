@@ -1,0 +1,1 @@
+{\"event\":\"login\",\"user\":{\"id\":42,\"roles\":[\"admin\"]},\"msg\":\"x\\ny\"}

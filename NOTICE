@@ -1,0 +1,12 @@
+JsonHippo
+Copyright 2026 Jason Figge
+
+This product is licensed under the Apache License, Version 2.0 (see the LICENSE
+file in the root of this distribution).
+
+This software bundles one third-party component, distributed under its own
+license:
+
+  jQuery 4.0.0 (src/vendor/jquery.min.js) — MIT License,
+  (c) OpenJS Foundation and other contributors, https://jquery.com/license
+  It is the local fallback for the pinned cdnjs copy loaded by src/index.html.

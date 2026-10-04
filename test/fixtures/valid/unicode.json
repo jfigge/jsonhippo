@@ -1,0 +1,9 @@
+{
+  "escapes": "quote \" backslash \\ slash \/ b\b f\f n\n r\r t\t",
+  "accent": "caf\u00e9 / café",
+  "emoji": "\ud83e\udd9b and 🦛",
+  "lone": "\ud800",
+  "cjk": "日本語",
+  "\u006bey": "escaped key",
+  "": "empty key"
+}

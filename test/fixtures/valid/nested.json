@@ -1,0 +1,9 @@
+{
+  "items": [
+    {"id": 1, "name": "Ada", "tags": ["math", "engines"], "address": {"city": "London", "zip": "W1"}},
+    {"id": 2, "name": "Grace", "tags": [], "address": {"city": "New York", "zip": "10001"}},
+    {"id": 3, "name": "Alan", "tags": ["logic"], "address": null}
+  ],
+  "count": 3,
+  "ratio": 0.75
+}
