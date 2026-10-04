@@ -23,17 +23,26 @@
  *
  *   TextView   (text-view.js)   the textarea, gutter, toolbar, smart-paste notice
  *   StatusBar  (status-bar.js)  valid summary, or the error with its jump links
+ *   WarningsView (warnings-view.js) the list of lint warnings, opened from the status bar
  *   TreeView   (tree-view.js)   the tree, its toolbar and detail bar (jQuery)
  *   TreeFilter (tree-filter.js) the filter box over the tree (jQuery)
+ *   SchemaView (schema-view.js) the Schema tab: a JSON Schema inferred from the text
  *   DiffView   (diff-view.js)   the Diff tab: two editable panes, compared
  *
  * When validation runs (docs/features/05): on paste, on Format/Minify, and
  * 400 ms after typing stops — except above LIVE_LIMIT, where typing does not
- * trigger it and the status bar offers "Validate now" instead.
+ * trigger it and the status bar offers "Validate now" instead. With the
+ * Warnings box ticked, each validation also lints (lint/linter.js).
+ *
+ * The Tree and Schema tabs show the parse of exactly the current text: if it
+ * is behind when either is opened, they parse there and then. The schema
+ * (docs/features/09) is inferred from that parse into a tab of its own, so
+ * the text is never changed.
  */
 
 import { parse } from "./parser/parser.js";
 import { JsonHippoError } from "./parser/errors.js";
+import { Linter } from "./lint/linter.js";
 import { detectAndUnescape } from "./smart-paste.js";
 import { format, minify, INDENTS } from "./formatter.js";
 import { TextView } from "./text-view.js";
@@ -41,7 +50,9 @@ import { StatusBar } from "./status-bar.js";
 import { Settings } from "./settings.js";
 import { TreeView } from "./tree-view.js";
 import { TreeFilter } from "./tree-filter.js";
+import { SchemaView } from "./schema-view.js";
 import { DiffView } from "./diff-view.js";
+import { WarningsView } from "./warnings-view.js";
 import { debounce, nextFrame, utf8Length } from "./util.js";
 
 const TYPING_DEBOUNCE_MS = 400;
@@ -53,7 +64,7 @@ const LIVE_LIMIT = 5 * 1024 * 1024;
 const SHOW_BUSY_ABOVE = 512 * 1024;
 
 /** The tabs, in the order they sit in the bar. */
-const TABS = ["tree", "text", "diff"];
+const TABS = ["tree", "text", "schema", "diff"];
 
 const THEMES = ["system", "light", "dark"];
 const THEME_UI = {
@@ -91,11 +102,22 @@ class App {
       onJump: (start, end, line, column) => this.jumpToText(start, end, line, column),
       onDiffJump: (side, start, end) => this.diffView.panes[side].jumpTo(start, end),
       onValidate: () => this.validate(),
+      onWarnings: () => this.warningsView.toggle(),
+    });
+
+    this.warningsView = new WarningsView(document.getElementById("jh-warnings"), {
+      onJump: (w) => this.jumpToText(w.offset, w.endOffset, w.line, w.column),
+      onChange: (open) => this.status.warningsExpanded(open),
     });
 
     this.diffView = new DiffView(document.getElementById("jh-panel-diff"), {
       status: this.status,
       settings: this.settings,
+    });
+
+    this.schemaView = new SchemaView(document.getElementById("jh-panel-schema"), {
+      settings: this.settings,
+      onGoToError: () => this.goToError(),
     });
 
     const $tree = $("#jh-panel-tree");
@@ -104,10 +126,7 @@ class App {
       // outside the tree needs to follow the selection yet.
       onSelect: () => {},
       onShowInText: ({ node, keyToken }) => this.showInText(node, keyToken),
-      onGoToError: () => {
-        const err = this.result.error;
-        if (err) this.jumpToText(err.offset, err.endOffset, err.line, err.column);
-      },
+      onGoToError: () => this.goToError(),
       formatValue: (node) => format(node, { indent: INDENTS[this.settings.indent] }),
     });
     this.treeFilter = new TreeFilter($tree, this.treeView, {
@@ -115,6 +134,7 @@ class App {
       isActive: () => this.tab === "tree",
     });
     this.treeView.showEmpty();
+    this.schemaView.showEmpty();
 
     this.validateSoon = debounce(() => this.validate(), TYPING_DEBOUNCE_MS);
     this.bindChrome();
@@ -129,6 +149,8 @@ class App {
     // the edits away without saying so.
     if (this.unescapeOriginal !== null && !paste) this.dropUndo();
     this.textView.clearError();
+    this.textView.clearWarnings();
+    this.warningsView.markStale();
     if (paste) {
       this.validateSoon.cancel();
       this.validate();
@@ -235,7 +257,9 @@ class App {
       this.result = { version, empty: true };
       this.status.idle();
       this.textView.clearError();
-      this.syncTree();
+      this.textView.clearWarnings();
+      this.warningsView.update([], 0);
+      this.syncView();
       return this.result;
     }
 
@@ -247,13 +271,13 @@ class App {
 
     this.result = this.parseNow(text, version);
     this.showResult(text);
-    this.syncTree();
+    this.syncView();
     return this.result;
   }
 
   parseNow(text, version) {
     try {
-      return { version, ok: true, ...parse(text) };
+      return { version, ok: true, ...parse(text, { lint: this.settings.lint ? new Linter() : null }) };
     } catch (err) {
       if (!(err instanceof JsonHippoError)) throw err;
       return { version, error: err };
@@ -263,25 +287,33 @@ class App {
   showResult(text) {
     const r = this.result;
     if (r.ok) {
-      this.status.valid(r, utf8Length(text), r.ast.kind);
+      this.warningsView.update(r.warnings, r.warningTotal);
+      this.status.valid(r, utf8Length(text), r.ast.kind, { listOpen: this.warningsView.isOpen });
       this.textView.clearError();
+      this.textView.setWarnings(r.warnings);
     } else if (r.error) {
+      this.warningsView.update([], 0);
       this.status.error(r.error);
       this.textView.showError(r.error);
+      this.textView.clearWarnings();
     }
   }
 
-  /** The Tree tab shows the parse of exactly the current text, or its error. */
-  syncTree() {
-    if (this.tab !== "tree") return;
+  /** The Tree and Schema tabs show the parse of exactly the current text, or its error. */
+  syncView() {
+    if (this.tab !== "tree" && this.tab !== "schema") return;
     if (this.result.version !== this.version) {
       this.result = this.textView.text.trim() === "" ? { version: this.version, empty: true } : this.parseNow(this.textView.text, this.version);
       if (!this.result.empty) this.showResult(this.textView.text);
     }
-    const r = this.result;
+    if (this.tab === "tree") this.syncTree(this.result);
+    else this.syncSchema(this.result);
+  }
+
+  syncTree(r) {
     if (r.ok) {
       if (this.treeView.ast !== r.ast) {
-        this.treeView.setDocument(r.ast, r.stats);
+        this.treeView.setDocument(r.ast, r.stats, r.warnings);
         this.treeFilter.refresh();
       }
     } else if (r.error) {
@@ -291,6 +323,12 @@ class App {
       this.treeView.showEmpty();
       this.treeFilter.refresh();
     }
+  }
+
+  syncSchema(r) {
+    if (r.ok) this.schemaView.show(r.ast);
+    else if (r.error) this.schemaView.showError(r.error);
+    else this.schemaView.showEmpty();
   }
 
   // ── Navigation between views ─────────────────────────────────────────────
@@ -318,17 +356,24 @@ class App {
       document.getElementById(`jh-panel-${id}`).hidden = !on;
     }
 
-    // Entering Diff: whatever is in the editor goes into the Left pane.
+    // Entering Diff: whatever is in the editor goes into the Left pane. The
+    // Diff tab has its own status; the warnings list is the Text tab's.
     if (name === "diff") {
+      this.warningsView.toggle(false);
       this.validateSoon.flush();
       this.diffView.enter(this.textView.text);
       return;
     }
     if (from === "diff") this.validate(); // puts the Text/Tree status back
-    if (name === "tree") {
+    if (name === "tree" || name === "schema") {
       this.validateSoon.flush();
-      this.syncTree();
+      this.syncView();
     }
+  }
+
+  goToError() {
+    const err = this.result.error;
+    if (err) this.jumpToText(err.offset, err.endOffset, err.line, err.column);
   }
 
   jumpToText(start, end, line, column) {
@@ -371,6 +416,14 @@ class App {
     auto.checked = this.settings.autoUnescape;
     auto.addEventListener("change", () => {
       this.settings.autoUnescape = auto.checked;
+    });
+
+    // Off means no lint work at all, so turning it on (or off) parses again.
+    const lint = document.getElementById("jh-lint");
+    lint.checked = this.settings.lint;
+    lint.addEventListener("change", () => {
+      this.settings.lint = lint.checked;
+      this.validate();
     });
 
     const themeButton = document.getElementById("jh-theme");

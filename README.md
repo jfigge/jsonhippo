@@ -25,8 +25,10 @@ on one side gets a placeholder row you can type straight into, and a
 **Reorder** switch can lay either side out in the other's order so only the
 real differences stand out.
 
-Plus format and minify that keep every digit and key order, copy path, copy
-value, light and dark themes, and large-file handling. Nothing is uploaded:
+Plus **warnings** for JSON that is valid but suspect (duplicate keys, empty
+keys, numbers that lose precision), a **Schema** tab with the JSON Schema
+inferred from a sample, format and minify that keep every digit and key order,
+copy path, copy value, light and dark themes, and large-file handling. Nothing is uploaded:
 it is a static page and all the work happens in the browser.
 
 See **[docs/USAGE.md](docs/USAGE.md)** for the user guide and the reference of
@@ -88,8 +90,8 @@ JsonHippo `externalSite: true` (its generator never writes that directory) and
 - **No parsing library, and no `JSON.parse` / `JSON.stringify` in `src/`.**
   The custom parser is the source of truth; ESLint enforces this. Tests use
   `JSON.parse` as an oracle.
-- **The parser, smart paste, formatter, tree search and the diff engine are
-  pure JS** — no DOM, no jQuery — so they run under `node --test`. ESLint
+- **The parser, smart paste, formatter, tree search, linter, schema
+  inference and the diff engine are pure JS** — no DOM, no jQuery — so they run under `node --test`. ESLint
   gives those files no browser globals, so a stray `document` or `$` fails the
   lint.
 
@@ -113,6 +115,14 @@ src/
     tree-view.js          Tree tab: lazy jQuery tree, toolbar, detail bar
     tree-search.js        the filter's search over the AST (pure)
     tree-filter.js        the filter bar (jQuery)
+    schema-view.js        Schema tab: the inferred schema, read-only, and its options
+    lint/                 warnings for valid but suspect JSON (pure)
+      linter.js           runs the rules as the parser reads; collects warnings
+      rules.js            the checks: duplicate key, empty key, precision loss
+    warnings-view.js      the list of warnings above the status bar
+    schema/
+      infer.js            a JSON Schema from a sample document (pure)
+    numbers.js            a number's exact value, from its source text (pure)
     diff/                 the Diff tab's logic (pure)
       json-diff.js        semantic diff: members by key, elements by content
       reorder.js          the Reorder switch: one side in the other's order
@@ -128,7 +138,8 @@ src/
   img/                    the JsonHippo mark (SVG, and a 512 px PNG)
 test/
   *.test.js               tokenizer, parser, parser errors, smart paste,
-                          formatter, tree search, diff, diff alignment, diff session
+                          formatter, tree search, lint, schema, diff,
+                          diff alignment, diff session
   fixtures/valid/         valid samples (compared against JSON.parse)
   fixtures/invalid/       one or more samples per error code; positions in
                           invalid-expected.json
@@ -159,6 +170,16 @@ docs/
   columns in them. `make fixtures` writes them out for trying in the app.
 - **Positions are UTF-16 offsets** — the units a `<textarea>` uses — so an
   error's offset goes straight into `setSelectionRange`.
+- **The linter rides on the parse.** The parser already visits every key and
+  value, so it calls the linter as it goes (`parse(text, { lint })`) rather
+  than the linter walking the tree again; with Warnings off no linter is
+  passed and no lint work is done. Each check is an independent rule with
+  handlers for the events it needs (`lint/rules.js`), so a new check is one
+  more rule.
+- **The schema is written by the formatter.** Inference builds the schema as
+  an AST in the parser's shape, and `formatter.js` writes it out — no
+  `JSON.stringify`, and property names keep the exact text they had in the
+  sample.
 - **Diff placeholders are empty lines only the model knows about.** A Diff
   pane is a plain textarea, so a placeholder can only be an empty line in it.
   `diff/pane-model.js` keeps a metadata record per line, follows every edit

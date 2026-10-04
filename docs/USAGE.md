@@ -1,9 +1,10 @@
 # Using JsonHippo
 
-JsonHippo is one page with three tabs. **Text** is where JSON goes in and where
-errors are shown; **Tree** is where you explore it; **Diff** compares two
-documents side by side. Everything happens in your browser: nothing you paste
-or load is uploaded anywhere.
+JsonHippo is one page with four tabs. **Text** is where JSON goes in and where
+errors are shown; **Tree** is where you explore it; **Schema** shows a
+**JSON Schema** that describes it; **Diff** compares two documents side by
+side. Valid JSON is also checked for likely mistakes (**warnings**). Everything happens in your browser: nothing you paste or load is
+uploaded anywhere.
 
 ## Getting JSON in
 
@@ -82,9 +83,54 @@ closed, a second link, **Go to the opener**, jumps to the `{` or `[` involved.
 Only the first error is reported. Fix it and the next one, if any, appears.
 
 Valid JSON gets a summary instead — "Valid JSON — 1,284 keys, depth 7,
-2.1 MB" — plus a warning if any object has the same key twice. Duplicate keys
-are allowed by the JSON grammar but almost always a mistake; the warning links
-to the second one.
+2.1 MB" — and the count of any warnings.
+
+## Warnings
+
+An **error** means "this is not JSON". A **warning** means "this is JSON, but
+look here": something the grammar allows that is almost always a mistake.
+With **Warnings** ticked in the Text toolbar — it is, until you untick it —
+JsonHippo looks for:
+
+| Warning | Example | Why it matters |
+|---|---|---|
+| **Duplicate key** | `{"id": 1, "id": 2}` | Only one of the values survives a parse — the last, in most parsers — and the other is lost without a word. Every repeat is flagged, with where the key was first defined. |
+| **Empty key** | `{"": 1}` | Legal, but usually a field name that went missing. |
+| **Precision loss** | `12345678901234567890`, `3.141592653589793238`, `1e400` | The number changes when it is read the way JavaScript — and most JSON libraries, by default — read every number: as a 64-bit float. The warning says what it becomes. |
+
+Precision loss in detail:
+
+- An **integer** (written without a fraction or an exponent) beyond
+  ±9,007,199,254,740,991 (2^53 − 1): `12345678901234567890` becomes
+  `12345678901234567000`. Even one that happens to be exact, such as
+  `9007199254740992`, is flagged: past that point not every integer is.
+- **Any other number** that does not survive the round trip — read as a
+  64-bit float, then written back the shortest way that reads the same:
+  too many digits (`3.141592653589793238` → `3.141592653589793`), too large
+  (`1e400` → `Infinity`), too small (`1e-400` → `0`). `1.50` and `1E+2` are
+  fine: written back they are `1.5` and `100`, the same numbers.
+- Seventeen-digit numbers such as `0.10000000000000001`, the way C's `%.17g`
+  writes them, are flagged too: they read back as `0.1`.
+
+JsonHippo itself never rounds anything — Format and Minify keep every digit as
+written. The warning is about what happens to the number elsewhere.
+
+Warnings never get in the way: the tree, Format and everything else work as
+usual. They show up:
+
+- **In the status bar**: "⚠ 3 warnings", and the first one, which you can
+  click to jump to it.
+- **In a list**: click the count to see every warning — where it is, what
+  kind, what it says, and its JSON path. Click one to put the caret on it.
+  <kbd>Esc</kbd> or × closes the list. It shows the first 1,000; the count
+  includes them all.
+- **In the Text gutter**: the line number turns amber, with a ▲. Hover over
+  it for what the warnings on that line are.
+- **In the tree**: a ⚠ after the row. Select the row and the detail bar says
+  what it is.
+
+Untick **Warnings** to turn the checks off altogether: nothing is checked and
+nothing is shown. The setting is remembered.
 
 ## Format, minify, copy
 
@@ -96,6 +142,64 @@ to the second one.
   stay in their original order, duplicates included.
 - Neither changes invalid text; they show the error instead.
 - **Copy** copies the text; **Clear** empties it.
+
+## Inferring a JSON Schema
+
+The **Schema** tab shows a [JSON Schema](https://json-schema.org/) inferred
+from the JSON in the Text tab: paste a representative document, and take away
+a spec to validate against elsewhere. It is worked out afresh each time you
+open the tab, and your JSON is never changed. The schema is read-only;
+**Copy** takes it. If the JSON is invalid, the tab shows the error instead,
+with **Go to error**.
+
+What the schema says, place by place:
+
+- **Objects**: `"type": "object"`, their `"properties"` in the order the keys
+  first appear, and `"required"`: the keys present in **every** object at
+  that place.
+- **Arrays**: `"type": "array"` and one `"items"` schema for all their
+  elements. Elements that differ are merged: a key in only some of the
+  objects is optional; a key in all of them is required.
+- **Values**: `"string"`, `"boolean"`, `"null"`, and `"integer"` while every
+  number at that place is written as an integer — `"number"` as soon as one is
+  written with a fraction or an exponent (`1.0` included: written that way,
+  it says the field is not an integer).
+- **Several types** at one place make a list: `"type": ["string", "null"]`.
+
+```json
+[{"id": 1, "tag": "a"}, {"id": 2, "tag": null, "score": 9.5}]
+```
+
+becomes
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "integer" },
+      "tag": { "type": ["string", "null"] },
+      "score": { "type": "number" }
+    },
+    "required": ["id", "tag"]
+  }
+}
+```
+
+(laid out more compactly here than Format writes it).
+
+Two options sit in the Schema toolbar, and changing either infers the schema
+again:
+
+- **Draft**: 2020-12 (the default) or draft-07. Only the `$schema` line
+  differs; everything else is written the same way in both.
+- **Required keys**: untick it to leave out every `"required"` list, making
+  every property optional.
+
+Both are remembered. The schema is indented like Format (the **Indent** choice
+in the Text toolbar).
 
 ## The tree
 
@@ -241,11 +345,12 @@ it, in which case your edits are kept.
 | Where | Key | Does |
 |---|---|---|
 | Text, or a Diff pane | <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd> | Format |
-| Tabs | <kbd>←</kbd> <kbd>→</kbd> | Switch between Tree, Text and Diff |
+| Tabs | <kbd>←</kbd> <kbd>→</kbd> | Switch between Tree, Text, Schema and Diff |
 | Diff | <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> | Previous / next difference |
 | Tree tab | <kbd>/</kbd> | Focus the filter |
 | Filter | <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> | Next / previous match |
 | Filter or tree | <kbd>Esc</kbd> | Clear the filter |
+| Warnings list | <kbd>Esc</kbd> | Close it |
 | Tree | <kbd>↑</kbd> <kbd>↓</kbd> | Previous / next row |
 | Tree | <kbd>→</kbd> | Open a container, or move into it |
 | Tree | <kbd>←</kbd> | Close a container, or move to its parent |
@@ -283,8 +388,11 @@ tokenizer (the characters themselves).
 | `BAD_LITERAL` | `tru`, `True`, `undefined`, `NaN` | A bare word that is not `true`, `false` or `null`. | Fix the spelling (lower-case), use `null` for undefined, or quote it if it is text. |
 | `UNEXPECTED_CHAR` | `'`, `#`, `@`, a no-break space | A character that cannot start anything in JSON. The hint names the usual causes: single quotes, comments, curly quotes, invisible characters. | Delete it or replace it, as the hint suggests. |
 
-And one warning, which does not stop the JSON being valid:
+And the warnings, which do not stop the JSON being valid (see
+[Warnings](#warnings)):
 
 | Code | Example | What it means | Fix |
 |---|---|---|---|
 | `DUPLICATE_KEY` | `{"id": 1, "id": 2}` | The same key twice in one object. Most programs keep only the last one. | Rename or remove one of them. |
+| `EMPTY_KEY` | `{"": 1}` | A key that is the empty string. | Give it its name. |
+| `NUMBER_PRECISION` | `12345678901234567890`, `1e400` | A number that changes when read as a 64-bit float. | If every digit matters, send it as a string: `"12345678901234567890"`. |

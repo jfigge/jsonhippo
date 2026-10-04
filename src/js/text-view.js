@@ -16,7 +16,7 @@
 
 /**
  * text-view.js — the Text tab: a plain <textarea>, a line-number gutter, the
- * toolbar, and in-place error marking.
+ * toolbar, and in-place marking of the error and of any warnings.
  *
  * The textarea always accepts input, valid or not: the user has to see the
  * bad text to fix it. Nothing here parses; app.js does, and calls back with
@@ -39,7 +39,10 @@
  * mirror rounds exactly the way the textarea does.
  */
 
-import { copyText, flashButton } from "./util.js";
+import { copyText, escapeHtml, flashButton, formatCount } from "./util.js";
+
+/** A gutter tooltip lists this many of a line's warnings, then counts the rest. */
+const TOOLTIP_WARNINGS = 5;
 
 export class TextView {
   /**
@@ -69,6 +72,7 @@ export class TextView {
 
     this.lineCount = 1;
     this.error = null; // { line, column, offset, endOffset, x0, x1 } currently marked
+    this.warnLines = new Map(); // line → its warnings' messages
     this.renderQueued = false;
     this.mirror = document.createElement("div");
     this.mirror.className = "jh-mirror";
@@ -112,6 +116,21 @@ export class TextView {
     this.band.hidden = true;
     this.mark.hidden = true;
     this.scheduleRender();
+  }
+
+  /** Mark the lines that have warnings in the gutter; a tooltip says what they are. */
+  setWarnings(warnings) {
+    this.warnLines = new Map();
+    for (const w of warnings) {
+      const list = this.warnLines.get(w.line);
+      if (list) list.push(w.message);
+      else this.warnLines.set(w.line, [w.message]);
+    }
+    this.scheduleRender();
+  }
+
+  clearWarnings() {
+    if (this.warnLines.size > 0) this.setWarnings([]);
   }
 
   /**
@@ -266,7 +285,10 @@ export class TextView {
 
     let html = "";
     for (let n = first + 1; n <= last; n++) {
-      html += n === errorLine ? `<div class="jh-gutter-line jh-gutter-line--error">${n}</div>` : `<div class="jh-gutter-line">${n}</div>`;
+      const warned = this.warnLines.get(n);
+      if (n === errorLine) html += `<div class="jh-gutter-line jh-gutter-line--error">${n}</div>`;
+      else if (warned) html += `<div class="jh-gutter-line jh-gutter-line--warn" title="${escapeHtml(tooltip(warned))}">${n}</div>`;
+      else html += `<div class="jh-gutter-line">${n}</div>`;
     }
     this.gutterLines.innerHTML = html;
     this.gutterLines.style.transform = `translateY(${this.padTop + first * lh - ta.scrollTop}px)`;
@@ -288,6 +310,13 @@ export class TextView {
     this.mark.style.left = `${this.padLeft + err.x0 - ta.scrollLeft}px`;
     this.mark.style.width = `${Math.max(err.x1 - err.x0, this.charWidth)}px`;
   }
+}
+
+/** A line's warnings, one per tooltip line. */
+function tooltip(messages) {
+  const shown = messages.slice(0, TOOLTIP_WARNINGS).map((m) => `⚠ ${m}`);
+  if (messages.length > TOOLTIP_WARNINGS) shown.push(`and ${formatCount(messages.length - TOOLTIP_WARNINGS)} more on this line`);
+  return shown.join("\n");
 }
 
 /** 1-based line and column of an offset (counts newlines before it). */

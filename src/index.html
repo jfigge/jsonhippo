@@ -50,6 +50,7 @@
   <symbol id="jh-i-collapse" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 2.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
   <symbol id="jh-i-up" viewBox="0 0 16 16"><path d="M3.5 10.5L8 6l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="jh-i-down" viewBox="0 0 16 16"><path d="M3.5 5.5L8 10l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="jh-i-warn" viewBox="0 0 16 16"><path d="M8 2.2l6.3 11.3H1.7z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.6v3.2M8 11.6v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
   <symbol id="jh-i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
   <symbol id="jh-i-system" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/></symbol>
   <symbol id="jh-i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
@@ -80,6 +81,7 @@
        where the JSON has to go in before there is a tree to show. -->
   <button type="button" class="jh-tab" id="jh-tab-tree" role="tab" aria-selected="false" aria-controls="jh-panel-tree" tabindex="-1">Tree</button>
   <button type="button" class="jh-tab jh-tab--active" id="jh-tab-text" role="tab" aria-selected="true" aria-controls="jh-panel-text">Text</button>
+  <button type="button" class="jh-tab" id="jh-tab-schema" role="tab" aria-selected="false" aria-controls="jh-panel-schema" tabindex="-1">Schema</button>
   <button type="button" class="jh-tab" id="jh-tab-diff" role="tab" aria-selected="false" aria-controls="jh-panel-diff" tabindex="-1">Diff</button>
 </div>
 
@@ -118,6 +120,10 @@
         <label class="jh-check" title="When you paste escaped JSON, unescape it automatically">
           <input type="checkbox" id="jh-auto-unescape" checked>
           <span>Auto-unescape</span>
+        </label>
+        <label class="jh-check" title="Warn about valid JSON that is probably a mistake: duplicate keys, empty keys, numbers that lose precision">
+          <input type="checkbox" id="jh-lint" checked>
+          <span>Warnings</span>
         </label>
       </div>
     </div>
@@ -198,6 +204,7 @@
     <div class="jh-detail" id="jh-detail" hidden>
       <code class="jh-detail-path"></code>
       <span class="jh-detail-kind"></span>
+      <span class="jh-detail-warn" hidden></span>
       <span class="jh-detail-actions">
         <button type="button" class="jh-btn" data-tree="copy-path">
           <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-copy"/></svg><span>Copy path</span>
@@ -211,6 +218,46 @@
       </span>
     </div>
   </section>
+
+  <!-- ── Schema ───────────────────────────────────────────────────────── -->
+  <!-- A JSON Schema inferred from the Text tab's JSON each time the tab
+       opens. Read-only: the JSON it came from is never changed. -->
+  <section class="jh-panel" id="jh-panel-schema" role="tabpanel" aria-labelledby="jh-tab-schema" hidden>
+    <div class="jh-toolbar" role="toolbar" aria-label="Schema tools">
+      <button type="button" class="jh-btn" data-schema="copy" title="Copy the schema to the clipboard">
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-copy"/></svg><span>Copy</span>
+      </button>
+
+      <div class="jh-toolbar-end">
+        <select id="jh-schema-draft" class="jh-select jh-select--quiet" aria-label="JSON Schema draft" title="JSON Schema draft">
+          <option value="2020-12">Draft 2020-12</option>
+          <option value="07">Draft-07</option>
+        </select>
+        <label class="jh-check" title="List the keys that every object at a position has as required">
+          <input type="checkbox" id="jh-schema-required" checked>
+          <span>Required keys</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="jh-notice" role="status" hidden></div>
+
+    <div class="jh-editor">
+      <div class="jh-gutter" aria-hidden="true"><div class="jh-gutter-lines"></div></div>
+      <div class="jh-input-wrap">
+        <textarea class="jh-input" readonly spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="JSON Schema inferred from the JSON"></textarea>
+      </div>
+    </div>
+
+    <div class="jh-schema-message" hidden>
+      <p class="jh-schema-message-title"></p>
+      <p class="jh-schema-message-hint"></p>
+      <button type="button" class="jh-btn jh-btn--primary" data-schema="go-to-error" hidden>
+        <svg class="jh-icon" aria-hidden="true"><use href="#jh-i-target"/></svg><span>Go to error</span>
+      </button>
+    </div>
+  </section>
+
   <!-- ── Diff ─────────────────────────────────────────────────────────── -->
   <section class="jh-panel" id="jh-panel-diff" role="tabpanel" aria-labelledby="jh-tab-diff" hidden>
     <div class="jh-toolbar jh-diff-toolbar" role="toolbar" aria-label="Diff tools">
@@ -290,6 +337,15 @@
     <input type="file" class="jh-file" id="jh-diff-file" accept=".json,.txt,.log,application/json,text/plain" hidden>
   </section>
 </main>
+
+<!-- Warnings (lint): the full list, opened from the status bar. -->
+<section class="jh-warnings" id="jh-warnings" aria-labelledby="jh-warnings-title" hidden>
+  <div class="jh-warnings-head">
+    <span class="jh-warnings-title" id="jh-warnings-title">Warnings</span>
+    <button type="button" class="jh-notice-close" data-warnings="close" aria-label="Close the list of warnings">×</button>
+  </div>
+  <ol class="jh-warnings-list"></ol>
+</section>
 
 <footer class="jh-status" id="jh-status" role="status" aria-live="polite">
   <span class="jh-status-main">Paste JSON, type it, or load a file.</span>

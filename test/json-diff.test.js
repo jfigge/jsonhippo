@@ -17,7 +17,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { parse } from "../src/js/parser/parser.js";
-import { diffJson, pairItems, canonicalNumber, similarity, Hasher, totalDifferences } from "../src/js/diff/json-diff.js";
+import { diffJson, pairItems, similarity, Hasher, totalDifferences } from "../src/js/diff/json-diff.js";
+import { canonicalNumber } from "../src/js/numbers.js";
 import { makeLargeObject, makeLargeText } from "./fixtures/generate.js";
 import { bestTime } from "./helpers.js";
 

@@ -55,6 +55,9 @@ export default [
       "src/js/json-path.js",
       "src/js/tree-search.js",
       "src/js/diff/**/*.js",
+      "src/js/lint/**/*.js",
+      "src/js/schema/**/*.js",
+      "src/js/numbers.js",
     ],
     languageOptions: {
       globals: { ...globals.es2021 },

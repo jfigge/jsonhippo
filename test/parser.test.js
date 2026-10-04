@@ -17,6 +17,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { parse, MAX_DEPTH } from "../src/js/parser/parser.js";
+import { Linter } from "../src/js/lint/linter.js";
 import { makeDeep, makeLargeText } from "./fixtures/generate.js";
 import { bestTime, fixtures, toJS } from "./helpers.js";
 
@@ -78,8 +79,8 @@ describe("AST", () => {
 });
 
 describe("warnings and stats", () => {
-  test("duplicate keys are warnings, not errors", () => {
-    const { warnings } = parse('{\n  "id": 1,\n  "x": {"id": 2},\n  "id": 3\n}');
+  test("duplicate keys are warnings, not errors (with a linter)", () => {
+    const { warnings } = parse('{\n  "id": 1,\n  "x": {"id": 2},\n  "id": 3\n}', { lint: new Linter() });
     assert.equal(warnings.length, 1);
     const [w] = warnings;
     assert.equal(w.code, "DUPLICATE_KEY");
@@ -90,7 +91,12 @@ describe("warnings and stats", () => {
   });
 
   test("the same key in different objects is not a duplicate", () => {
-    assert.equal(parse('[{"a":1},{"a":2}]').warnings.length, 0);
+    assert.equal(parse('[{"a":1},{"a":2}]', { lint: new Linter() }).warnings.length, 0);
+  });
+
+  test("without a linter there are no warnings at all", () => {
+    const r = parse('{"id": 1, "id": 2, "": 12345678901234567890}');
+    assert.deepEqual([r.warnings, r.warningTotal], [[], 0]);
   });
 
   test("stats count nodes, keys and depth", () => {
