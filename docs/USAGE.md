@@ -1,8 +1,9 @@
 # Using JsonHippo
 
-JsonHippo is one page with two tabs. **Text** is where JSON goes in and where
-errors are shown; **Tree** is where you explore it. Everything happens in your
-browser: nothing you paste or load is uploaded anywhere.
+JsonHippo is one page with three tabs. **Text** is where JSON goes in and where
+errors are shown; **Tree** is where you explore it; **Diff** compares two
+documents side by side. Everything happens in your browser: nothing you paste
+or load is uploaded anywhere.
 
 ## Getting JSON in
 
@@ -153,12 +154,95 @@ stepping to a match further down draws up to it.
 - <kbd>Esc</kbd> — clear the filter. The tree goes back exactly as it was
   before you started filtering.
 
+## Comparing two documents (Diff)
+
+The **Diff** tab splits the editor into two panes, **Left** and **Right**.
+Whatever was in the Text editor goes into Left; Right starts empty (and keeps
+what you put in it while you visit the other tabs). Switching back to Text or
+Tree carries on with the Left pane's JSON.
+
+The comparison is about content, never order:
+
+- **Object members match by key.** `{"name": "A", "age": 3}` and
+  `{"age": 3, "name": "A"}` are the same.
+- **Array elements match by content.** `[1, 2]` and `[2, 1]` are the same
+  array. Equal elements pair first; of what is left, an object pairs with the
+  most similar object on the other side — shared keys and equal values count,
+  and an equal `id` (or `uuid`, `key`, `code`…) pairs two records outright. So
+  a record that moved *and* had one field changed shows as one changed field.
+  Two objects with the same keys but no value in common are treated as
+  different records.
+- **Values compare as JSON values.** `"3"` and `3` are a **type change**;
+  `1.0` and `1` are the same number; `"\u00e9"` and `"é"` are the same string.
+
+Each difference is highlighted on its row and marked in the gutter:
+
+| Mark | Colour | Means |
+|---|---|---|
+| `−` | red | **missing** — only on the Left |
+| `+` | green | **added** — only on the Right |
+| `~` | amber | **changed** — same key (or paired element), different value |
+| `≠` | purple | **type change** — e.g. a string on one side, a number on the other |
+
+The status bar sums them up — "3 differences: 1 added, 1 missing, 1 changed"
+— or says **Documents match**. ▲/▼ (or <kbd>Alt</kbd>+<kbd>↑</kbd> /
+<kbd>Alt</kbd>+<kbd>↓</kbd>) step from one difference to the next, and the two
+panes scroll together.
+
+### Both panes are editors
+
+Type, paste and delete in either pane. The panes are compared again about 1.5
+seconds after you stop typing — not on every keystroke. If a pane's JSON is
+invalid at that point, the status bar shows the parser's exact error for that
+pane (click it to jump there), and the last good comparison stays on screen
+until it is fixed.
+
+A pasted, loaded or carried-over document is laid out one value per line, so
+the two sides can line up row for row; what you type is never reformatted.
+Each pane has its own **Format**, **Unescape**, **Copy**, **Clear** and **Load
+from file** buttons, and smart paste works in each one.
+
+### Placeholders
+
+Where one side has a member or element the other lacks, the other side shows
+a **hatched placeholder** row, so both panes stay aligned and the gap is easy
+to see. Placeholders are only drawn: they are never part of the pane's JSON,
+and they are left out of Copy, of a copy or cut you make yourself, and of the
+text carried back to the Text tab.
+
+**Typing into a placeholder turns it into a real line** on the first
+keystroke. JsonHippo indents it like the line opposite and adds the comma the
+document will need — on the line above if the new member is now the last one,
+after your text if more follow. Paste the missing member in, pause, and the
+difference disappears.
+
+### Reorder
+
+```
+Reorder   ( Left master | [Off] | Right master )
+```
+
+- **Off** (the default): each pane keeps its own order. Reordered members are
+  still not counted as differences; they just sit on different rows.
+- **Left master**: Left is the reference, and the **Right pane is rewritten**
+  in Left's order — keys and array elements, at every level. Anything only on
+  the Right goes after the matched members, in its own order. Now everything
+  lines up row for row and only the real differences stand out.
+- **Right master**: the same the other way round.
+
+Reordering changes order only: every key, string (escapes included) and number
+(as written) is kept exactly. The rewritten pane keeps following the master as
+you edit the master. Once you edit the rewritten pane yourself, it is left
+alone. Moving back to Off restores its original order — unless you have edited
+it, in which case your edits are kept.
+
 ## Keyboard
 
 | Where | Key | Does |
 |---|---|---|
-| Text | <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd> | Format |
-| Tabs | <kbd>←</kbd> <kbd>→</kbd> | Switch between Text and Tree |
+| Text, or a Diff pane | <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd> | Format |
+| Tabs | <kbd>←</kbd> <kbd>→</kbd> | Switch between Tree, Text and Diff |
+| Diff | <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> | Previous / next difference |
 | Tree tab | <kbd>/</kbd> | Focus the filter |
 | Filter | <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> | Next / previous match |
 | Filter or tree | <kbd>Esc</kbd> | Clear the filter |

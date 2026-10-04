@@ -54,6 +54,7 @@ export default [
       "src/js/formatter.js",
       "src/js/json-path.js",
       "src/js/tree-search.js",
+      "src/js/diff/**/*.js",
     ],
     languageOptions: {
       globals: { ...globals.es2021 },
