@@ -362,6 +362,9 @@ it, in which case your edits are kept.
 The theme follows your system's light or dark setting. The button in the
 header cycles **System → Light → Dark**, and the choice is remembered.
 
+Clicking the hippo at the top left opens **About**. The desktop app's About
+also shows its version.
+
 ## Error reference
 
 Every error JsonHippo reports, with an example that causes it and how to fix

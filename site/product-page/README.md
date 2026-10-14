@@ -5,9 +5,11 @@ three differentiators with screenshots, the everyday tools, the credit to
 jsonviewer.stack.hu, and links. **It is not published.**
 
 The app itself is what lives at
-[hippoherd.com/jsonhippo](https://hippoherd.com/jsonhippo/): the herd's index
-card is the advertisement, and its **Launch** button opens the app directly
-(`make site` publishes it; see the main README). This page is kept for when
+[hippoherd.com/jsonhippo](https://hippoherd.com/jsonhippo/) (`make site`
+publishes it; see the main README), and the page in front of it on the herd's
+site is hippoherd's own, generated at
+[hippoherd.com/jsonhippo/about](https://hippoherd.com/jsonhippo/about/) like
+every other hippo's, with the desktop downloads. This page is kept for when
 JsonHippo has a home of its own, such as jsonhippo.com, which would want a
 landing page in front of the app.
 

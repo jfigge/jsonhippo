@@ -72,4 +72,15 @@ export default [
       globals: { ...globals.browser },
     },
   },
+
+  // ── The Electron shell: Node's main process, CommonJS ─────────────────────
+  // electron/package.json has no "type", so these load as CommonJS, like the
+  // sibling apps' main processes.
+  {
+    files: ["electron/**/*.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: { ...globals.node },
+    },
+  },
 ];

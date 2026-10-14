@@ -4,7 +4,7 @@
   "private": true,
   "description": "A JSON viewer that tells you exactly where it broke.",
   "type": "module",
-  "license": "Apache-2.0",
+  "license": "GPL-3.0-or-later",
   "author": "Jason Figge",
   "homepage": "https://hippoherd.com/jsonhippo/",
   "repository": {

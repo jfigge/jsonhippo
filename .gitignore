@@ -6,8 +6,16 @@ build/
 test/fixtures/large/
 
 # ── Node / npm ────────────────────────────────────────────────────────────────
+# Matches electron/node_modules/ too.
 node_modules/
 npm-debug.log*
+
+# ── Release signing credentials (release.env.example is the tracked template) ─
+release.env
+certs/
+*.p12
+*.p8
+*.provisionprofile
 
 # ── macOS ─────────────────────────────────────────────────────────────────────
 .DS_Store
