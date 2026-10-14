@@ -306,10 +306,30 @@ textarea {
   color: var(--accent);
 }
 
-.jh-about-credit {
+.jh-about-made {
   margin: 16px 0 0;
   color: var(--muted);
   font-size: 12px;
+}
+
+.jh-about-credit {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.jh-about-support {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.jh-about-support:hover {
+  text-decoration: underline;
 }
 
 .jh-about form {

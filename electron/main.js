@@ -220,6 +220,7 @@ if (!app.requestSingleInstanceLock()) {
       applicationName: "JsonHippo",
       applicationVersion: app.getVersion(),
       copyright: "Copyright © 2026 Jason Figge · GPL-3.0-or-later",
+      credits: "Designed by Jason, Coded by Claude",
       website: HOME_PAGE,
     });
     lockDownSession();
