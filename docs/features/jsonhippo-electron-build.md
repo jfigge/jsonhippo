@@ -1,3 +1,8 @@
+> **Superseded (2026-10-15)** by
+> [jsonhippo-electron-removal-and-makesite.md](jsonhippo-electron-removal-and-makesite.md):
+> the standalone Electron app is gone; JsonHippo ships on the desktop inside the
+> shared ViewHippo app instead. Kept for history.
+
 We're adding Electron-packaged desktop builds of JsonHippo, plus a proper
 landing page for it on HippoHerd (matching the other Hippo apps), instead
 of the feature link going straight to the live web app.

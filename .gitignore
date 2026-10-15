@@ -6,11 +6,10 @@ build/
 test/fixtures/large/
 
 # ── Node / npm ────────────────────────────────────────────────────────────────
-# Matches electron/node_modules/ too.
 node_modules/
 npm-debug.log*
 
-# ── Release signing credentials (release.env.example is the tracked template) ─
+# ── Signing credentials: never committed ──────────────────────────────────────
 release.env
 certs/
 *.p12

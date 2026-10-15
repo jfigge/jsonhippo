@@ -9,7 +9,7 @@ The app itself is what lives at
 publishes it; see the main README), and the page in front of it on the herd's
 site is hippoherd's own, generated at
 [hippoherd.com/jsonhippo/about](https://hippoherd.com/jsonhippo/about/) like
-every other hippo's, with the desktop downloads. This page is kept for when
+every other hippo's. This page is kept for when
 JsonHippo has a home of its own, such as jsonhippo.com, which would want a
 landing page in front of the app.
 

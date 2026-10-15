@@ -362,8 +362,7 @@ it, in which case your edits are kept.
 The theme follows your system's light or dark setting. The button in the
 header cycles **System → Light → Dark**, and the choice is remembered.
 
-Clicking the hippo at the top left opens **About**. The desktop app's About
-also shows its version.
+Clicking the hippo at the top left opens **About**.
 
 ## Error reference
 
